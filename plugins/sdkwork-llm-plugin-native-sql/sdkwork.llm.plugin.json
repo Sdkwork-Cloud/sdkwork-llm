@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.llm.plugin",
+  "pluginId": "sdkwork-llm-plugin-native-sql",
+  "packageName": "sdkwork-llm-plugin-native-sql",
+  "displayName": "SDKWork LLM Native SQL Plugin",
+  "version": "0.1.0",
+  "owner": "sdkwork-llm",
+  "implementationKinds": ["native_sql", "local_embedded"],
+  "pluginRoles": ["implementation", "store"],
+  "deploymentModes": ["server", "container", "private", "local", "test"],
+  "portExports": [
+    {
+      "port": "LlmRecordStorePort",
+      "builder": "build_native_sql_record_store"
+    },
+    {
+      "port": "LlmEventStorePort",
+      "builder": "build_native_sql_event_store"
+    },
+    {
+      "port": "LlmAuditStorePort",
+      "builder": "build_native_sql_audit_store"
+    },
+    {
+      "port": "LlmOutboxStorePort",
+      "builder": "build_native_sql_outbox_store"
+    },
+    {
+      "port": "LlmCandidateStorePort",
+      "builder": "build_native_sql_candidate_store"
+    },
+    {
+      "port": "LlmHabitStorePort",
+      "builder": "build_native_sql_habit_store"
+    },
+    {
+      "port": "LlmRetrievalTraceStorePort",
+      "builder": "build_native_sql_retrieval_trace_store"
+    }
+  ],
+  "providerKinds": [],
+  "retrieverKinds": [],
+  "indexKinds": [],
+  "requiredCoreVersion": "0.1.0",
+  "secretRefs": [],
+  "dataClasses": ["tenant", "personal"],
+  "capabilities": {
+    "canonicalStore": true,
+    "eventLog": true,
+    "candidateLifecycle": true,
+    "habitLearning": true,
+    "retrievalTrace": true,
+    "deletionPropagation": true,
+    "auditLog": true,
+    "outboxLog": true,
+    "embeddingRequired": false
+  },
+  "degradation": {
+    "mode": "fail_required_degrade_optional",
+    "returnsStaleHits": false
+  },
+  "migration": {
+    "exportSupported": true,
+    "importSupported": true,
+    "dualWriteSupported": false,
+    "shadowReadSupported": true
+  },
+  "observability": {
+    "metricsPrefix": "sdkwork_llm_native_sql",
+    "redactsPayloads": true
+  },
+  "conformance": {
+    "suite": "sdkwork-llm-plugin-conformance",
+    "suiteVersion": "0.1.0"
+  }
+}

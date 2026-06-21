@@ -1,0 +1,15 @@
+schemaVersion: 1
+kind: sdkwork.sdkgen.config
+input: llm-app-api.openapi.json
+output: ../sdkwork-llm-app-sdk-typescript/generated/server-openapi
+sdkOwner: sdkwork-llm
+apiAuthority: sdkwork-llm.app
+sdkFamily: sdkwork-llm-app-sdk
+standardProfile: sdkwork-v3
+languageTargets:
+  - typescript
+ownerOnly: true
+domain: intelligence
+capability: llm
+prefix: /app/v3/api
+surface: app-api

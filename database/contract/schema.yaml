@@ -1,0 +1,58 @@
+schema_version: 1
+kind: sdkwork.database.schema
+module_id: llm
+contract_version: 1.0.0
+owner_team: llm-platform
+compliance_level: L2
+engines:
+  - postgres
+table_prefix: llm_
+tables:
+  - name: llm_space
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_event
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_record
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_record_source
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_candidate
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_habit
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_retrieval_trace
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_retrieval_hit
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_context_pack
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_index
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_retrieval_profile
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_implementation_profile
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_provider_binding
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_eval_run
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_audit_log
+    lifecycle_status: active
+    owner: llm-platform
+  - name: llm_outbox_event
+    lifecycle_status: active
+    owner: llm-platform

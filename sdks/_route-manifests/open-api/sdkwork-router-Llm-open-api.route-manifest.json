@@ -1,0 +1,393 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.route.manifest",
+  "packageName": "sdkwork-router-llm-open-api",
+  "surface": "open-api",
+  "owner": "sdkwork-llm",
+  "domain": "intelligence",
+  "capability": "llm",
+  "apiAuthority": "sdkwork-llm-open-api",
+  "sdkFamily": "sdkwork-llm-sdk",
+  "prefix": "/llm/v3/api",
+  "source": {
+    "crateRoot": "crates/sdkwork-router-llm-open-api",
+    "crateImport": "sdkwork_router_llm_open_api",
+    "openApiAuthority": "sdks/sdkwork-llm-sdk/openapi/llm-open-api.openapi.json"
+  },
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/llm/v3/api/llm/capabilities",
+      "operationId": "capabilities.retrieve",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "POST",
+      "path": "/llm/v3/api/llm/events",
+      "operationId": "events.create",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "GET",
+      "path": "/llm/v3/api/llm/events/{eventId}",
+      "operationId": "events.retrieve",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "GET",
+      "path": "/llm/v3/api/llm/records",
+      "operationId": "records.list",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "POST",
+      "path": "/llm/v3/api/llm/records",
+      "operationId": "records.create",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "GET",
+      "path": "/llm/v3/api/llm/records/{recordId}",
+      "operationId": "records.retrieve",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "PATCH",
+      "path": "/llm/v3/api/llm/records/{recordId}",
+      "operationId": "records.update",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "DELETE",
+      "path": "/llm/v3/api/llm/records/{recordId}",
+      "operationId": "records.delete",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "POST",
+      "path": "/llm/v3/api/llm/retrievals",
+      "operationId": "retrievals.create",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "GET",
+      "path": "/llm/v3/api/llm/retrievals/{retrievalId}",
+      "operationId": "retrievals.retrieve",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "POST",
+      "path": "/llm/v3/api/llm/context_packs",
+      "operationId": "contextPacks.create",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "GET",
+      "path": "/llm/v3/api/llm/context_packs/{contextPackId}",
+      "operationId": "contextPacks.retrieve",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "POST",
+      "path": "/llm/v3/api/llm/feedback",
+      "operationId": "feedback.create",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "POST",
+      "path": "/llm/v3/api/llm/extractions",
+      "operationId": "extractions.create",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "GET",
+      "path": "/llm/v3/api/llm/candidates",
+      "operationId": "candidates.list",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "GET",
+      "path": "/llm/v3/api/llm/candidates/{candidateId}",
+      "operationId": "candidates.retrieve",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    },
+    {
+      "method": "GET",
+      "path": "/llm/v3/api/llm/provider_health",
+      "operationId": "providerHealth.retrieve",
+      "tags": [
+        "llm"
+      ],
+      "auth": {
+        "mode": "api-key",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-llm",
+        "apiAuthority": "sdkwork-llm-open-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "open-api"
+    }
+  ]
+}

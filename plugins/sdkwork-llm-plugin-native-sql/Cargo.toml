@@ -1,0 +1,16 @@
+[package]
+name = "sdkwork-llm-plugin-native-sql"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+sdkwork-llm-spi = { path = "../../crates/sdkwork-llm-spi" }
+serde_json.workspace = true
+sdkwork-utils-rust.workspace = true
+sqlx.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true

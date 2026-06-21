@@ -1,0 +1,15 @@
+schemaVersion: 1
+kind: sdkwork.sdkgen.config
+input: llm-backend-api.openapi.json
+output: ../sdkwork-llm-backend-sdk-typescript/generated/server-openapi
+sdkOwner: sdkwork-llm
+apiAuthority: sdkwork-llm.backend
+sdkFamily: sdkwork-llm-backend-sdk
+standardProfile: sdkwork-v3
+languageTargets:
+  - typescript
+ownerOnly: true
+domain: intelligence
+capability: llm
+prefix: /backend/v3/api
+surface: backend-api

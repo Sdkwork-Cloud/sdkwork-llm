@@ -1,0 +1,19 @@
+[package]
+name = "sdkwork-intelligence-llm-service"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+sdkwork-llm-spi.workspace = true
+sdkwork-llm-contract.workspace = true
+sdkwork-llm-core.workspace = true
+sdkwork-llm-plugin-native-sql.workspace = true
+sdkwork-id-core.workspace = true
+sdkwork-utils-rust.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true

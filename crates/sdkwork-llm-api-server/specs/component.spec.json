@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-llm-api-server",
+    "displayName": "SDKWork LLM API Server",
+    "version": "0.1.0",
+    "type": "rust-binary",
+    "root": "sdkwork-llm/crates/sdkwork-llm-api-server",
+    "domain": "intelligence",
+    "capability": "memory",
+    "surface": "backend-service",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml"]
+  },
+  "canonicalSpecs": [
+    { "file": "WEB_FRAMEWORK_SPEC.md", "path": "../../../sdkwork-specs/WEB_FRAMEWORK_SPEC.md" },
+    { "file": "WEB_BACKEND_SPEC.md", "path": "../../../sdkwork-specs/WEB_BACKEND_SPEC.md" },
+    { "file": "DEPLOYMENT_SPEC.md", "path": "../../../sdkwork-specs/DEPLOYMENT_SPEC.md" },
+    { "file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md" }
+  ],
+  "contracts": {
+    "publicExports": [],
+    "runtimeEntrypoints": ["sdkwork-llm-api-server"],
+    "sdkClients": [],
+    "sdkDependencies": [
+      { "workspace": "sdkwork-web-framework" },
+      { "workspace": "sdkwork-database" },
+      { "workspace": "sdkwork-appbase" }
+    ],
+    "events": [],
+    "configKeys": ["SDKWORK_LLM_APPLICATION_PUBLIC_INGRESS_BIND", "SDKWORK_LLM_DATABASE_URL"]
+  },
+  "verification": {
+    "commands": ["cargo test -p sdkwork-llm-api-server"]
+  }
+}

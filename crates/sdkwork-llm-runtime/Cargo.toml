@@ -1,0 +1,11 @@
+[package]
+name = "sdkwork-llm-runtime"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+sdkwork-llm-spi = { path = "../sdkwork-llm-spi" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

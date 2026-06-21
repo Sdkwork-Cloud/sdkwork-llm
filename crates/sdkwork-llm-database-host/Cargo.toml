@@ -1,0 +1,17 @@
+[package]
+name = "sdkwork-llm-database-host"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+description = "SDKWork LLM database lifecycle bootstrap."
+
+[lib]
+name = "sdkwork_llm_database_host"
+path = "src/lib.rs"
+
+[dependencies]
+dotenvy = "0.15"
+sdkwork_database_config = { workspace = true }
+sdkwork_database_lifecycle = { workspace = true }
+sdkwork_database_spi = { workspace = true }
+sdkwork_database_sqlx = { workspace = true }

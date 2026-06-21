@@ -1,0 +1,48 @@
+{
+  "workspace": "sdkwork-llm-sdk",
+  "title": "SDKWork LLM Open API SDK",
+  "apiVersion": "0.1.0",
+  "openapiVersion": "3.1.2",
+  "authoritySpec": "openapi/llm-open-api.openapi.json",
+  "generationInputSpec": "openapi/llm-open-api.openapi.json",
+  "derivedSpecs": {
+    "default": "openapi/llm-open-api.openapi.json"
+  },
+  "apiAuthority": "sdkwork-llm-open-api",
+  "discoverySurface": {
+    "sdkTarget": "open-api",
+    "apiPrefix": "/llm/v3/api",
+    "schemaUrl": "/llm/v3/openapi.json",
+    "generatedProtocols": [
+      "http-openapi"
+    ],
+    "manualTransports": []
+  },
+  "languages": [
+    {
+      "language": "typescript",
+      "workspace": "sdkwork-llm-sdk-typescript",
+      "generationState": "declared",
+      "releaseState": "not_published",
+      "generatedPath": "sdkwork-llm-sdk-typescript/generated/server-openapi",
+      "manifestPath": "sdkwork-llm-sdk-typescript/generated/server-openapi/package.json",
+      "name": "@sdkwork/llm-sdk",
+      "version": "0.1.0",
+      "description": "Generator-owned TypeScript transport SDK for sdkwork-llm-open-api.",
+      "consumerSurface": {
+        "primaryClient": "SdkworkLlmOpenClient",
+        "apiPrefix": "/llm/v3/api"
+      }
+    }
+  ],
+  "sdkOwner": "sdkwork-llm",
+  "sdkDependencies": [],
+  "dependencyApiExports": [],
+  "dependencyApiSurfaces": [],
+  "metadata": {
+    "standardVersion": "2026-06-10",
+    "ownerOnlyOperationCount": null,
+    "materializationState": "authority-draft",
+    "managedBy": "tools/materialize_phase1_contracts.mjs"
+  }
+}

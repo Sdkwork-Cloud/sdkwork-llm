@@ -1,0 +1,16 @@
+pub const PREFIX: &str = "/llm/v3/api";
+pub const HEALTHZ: &str = "/healthz";
+pub const CAPABILITIES: &str = "/llm/v3/api/llm/capabilities";
+pub const EVENTS: &str = "/llm/v3/api/llm/events";
+pub const EVENT: &str = "/llm/v3/api/llm/events/{eventId}";
+pub const RECORDS: &str = "/llm/v3/api/llm/records";
+pub const RECORD: &str = "/llm/v3/api/llm/records/{recordId}";
+pub const RETRIEVALS: &str = "/llm/v3/api/llm/retrievals";
+pub const RETRIEVAL: &str = "/llm/v3/api/llm/retrievals/{retrievalId}";
+pub const CONTEXT_PACKS: &str = "/llm/v3/api/llm/context_packs";
+pub const CONTEXT_PACK: &str = "/llm/v3/api/llm/context_packs/{contextPackId}";
+pub const FEEDBACK: &str = "/llm/v3/api/llm/feedback";
+pub const EXTRACTIONS: &str = "/llm/v3/api/llm/extractions";
+pub const CANDIDATES: &str = "/llm/v3/api/llm/candidates";
+pub const CANDIDATE: &str = "/llm/v3/api/llm/candidates/{candidateId}";
+pub const PROVIDER_HEALTH: &str = "/llm/v3/api/llm/provider_health";

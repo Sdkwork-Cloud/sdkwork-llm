@@ -1,0 +1,69 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/sdkwork-llm-database-host",
+  "crates/sdkwork-router-llm-common",
+  "crates/sdkwork-llm-spi",
+  "crates/sdkwork-llm-runtime",
+  "crates/sdkwork-llm-contract",
+  "crates/sdkwork-llm-core",
+  "crates/sdkwork-llm-test-support",
+  "crates/sdkwork-intelligence-llm-service",
+  "crates/sdkwork-intelligence-llm-repository-sqlx",
+  "crates/sdkwork-router-llm-open-api",
+  "crates/sdkwork-router-llm-app-api",
+  "crates/sdkwork-router-llm-backend-api",
+  "crates/sdkwork-llm-integration-tests",
+  "crates/sdkwork-llm-api-server",
+  "plugins/sdkwork-llm-plugin-native-sql",
+  "plugins/sdkwork-llm-plugin-reference-profiles",
+]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+license = "UNLICENSED"
+
+[workspace.dependencies]
+async-trait = "0.1"
+axum = "0.8"
+http = "1.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite", "migrate"] }
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tower = { version = "0.5", features = ["util"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+sdkwork-llm-database-host = { path = "crates/sdkwork-llm-database-host" }
+sdkwork-llm-spi = { path = "crates/sdkwork-llm-spi" }
+sdkwork-llm-runtime = { path = "crates/sdkwork-llm-runtime" }
+sdkwork-llm-contract = { path = "crates/sdkwork-llm-contract" }
+sdkwork-llm-core = { path = "crates/sdkwork-llm-core" }
+sdkwork-llm-test-support = { path = "crates/sdkwork-llm-test-support" }
+sdkwork-llm-plugin-native-sql = { path = "plugins/sdkwork-llm-plugin-native-sql" }
+sdkwork-intelligence-llm-service = { path = "crates/sdkwork-intelligence-llm-service" }
+sdkwork-intelligence-llm-repository-sqlx = { path = "crates/sdkwork-intelligence-llm-repository-sqlx" }
+sdkwork-router-llm-open-api = { path = "crates/sdkwork-router-llm-open-api" }
+sdkwork-router-llm-common = { path = "crates/sdkwork-router-llm-common" }
+sdkwork-router-llm-app-api = { path = "crates/sdkwork-router-llm-app-api" }
+sdkwork-router-llm-backend-api = { path = "crates/sdkwork-router-llm-backend-api" }
+sdkwork-llm-api-server = { path = "crates/sdkwork-llm-api-server" }
+
+sdkwork-iam-web-adapter = { path = "../sdkwork-appbase/crates/sdkwork-iam-web-adapter" }
+sdkwork-router-iam-app-api = { path = "../sdkwork-appbase/crates/sdkwork-router-iam-app-api" }
+sdkwork-web-core = { path = "../sdkwork-web-framework/crates/sdkwork-web-core" }
+sdkwork-web-axum = { path = "../sdkwork-web-framework/crates/sdkwork-web-axum" }
+sdkwork-database-config = { path = "../sdkwork-database/crates/sdkwork-database-config", package = "sdkwork-database-config" }
+sdkwork-database-lifecycle = { path = "../sdkwork-database/crates/sdkwork-database-lifecycle", package = "sdkwork-database-lifecycle" }
+sdkwork-database-spi = { path = "../sdkwork-database/crates/sdkwork-database-spi", package = "sdkwork-database-spi" }
+sdkwork-database-sqlx = { path = "../sdkwork-database/crates/sdkwork-database-sqlx", package = "sdkwork-database-sqlx" }
+sdkwork-database-repository = { path = "../sdkwork-database/crates/sdkwork-database-repository", package = "sdkwork-database-repository" }
+sdkwork_database_config = { path = "../sdkwork-database/crates/sdkwork-database-config", package = "sdkwork-database-config" }
+sdkwork_database_lifecycle = { path = "../sdkwork-database/crates/sdkwork-database-lifecycle", package = "sdkwork-database-lifecycle" }
+sdkwork_database_spi = { path = "../sdkwork-database/crates/sdkwork-database-spi", package = "sdkwork-database-spi" }
+sdkwork_database_sqlx = { path = "../sdkwork-database/crates/sdkwork-database-sqlx", package = "sdkwork-database-sqlx" }
+sdkwork-id-core = { path = "../sdkwork-id/crates/sdkwork-id-core" }
+sdkwork-utils-rust = { path = "../sdkwork-utils/packages/sdkwork-utils-rust" }

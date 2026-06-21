@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-intelligence-llm-service",
+    "displayName": "SDKWork LLM Service",
+    "version": "0.1.0",
+    "type": "rust-library",
+    "root": "sdkwork-llm/crates/sdkwork-intelligence-llm-service",
+    "domain": "intelligence",
+    "capability": "memory",
+    "surface": "service",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml"]
+  },
+  "canonicalSpecs": [
+    { "file": "WEB_BACKEND_SPEC.md", "path": "../../../sdkwork-specs/WEB_BACKEND_SPEC.md" },
+    { "file": "DATABASE_SPEC.md", "path": "../../../sdkwork-specs/DATABASE_SPEC.md" },
+    { "file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md" }
+  ],
+  "contracts": {
+    "publicExports": ["OpenLlmService", "AppLlmService", "BackendLlmService"],
+    "runtimeEntrypoints": [],
+    "sdkClients": [],
+    "sdkDependencies": [
+      { "workspace": "sdkwork-utils" },
+      { "workspace": "sdkwork-id" }
+    ],
+    "events": [],
+    "configKeys": []
+  },
+  "verification": {
+    "commands": ["cargo test -p sdkwork-intelligence-llm-service"]
+  }
+}

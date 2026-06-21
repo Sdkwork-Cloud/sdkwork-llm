@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.llm.plugin",
+  "pluginId": "sdkwork-llm-plugin-reference-profiles",
+  "packageName": "sdkwork-llm-plugin-reference-profiles",
+  "displayName": "SDKWork LLM Reference Profiles Plugin",
+  "version": "0.1.0",
+  "owner": "sdkwork-llm",
+  "implementationKinds": [
+    "event_sourced",
+    "search_first",
+    "graph_temporal",
+    "external_provider_bridge",
+    "hybrid_platform"
+  ],
+  "pluginRoles": [
+    "implementation",
+    "store",
+    "retriever",
+    "index",
+    "provider",
+    "context",
+    "evaluation"
+  ],
+  "deploymentModes": ["server", "container", "private", "local", "test", "eval_only"],
+  "portExports": [
+    {
+      "port": "LlmRecordStorePort",
+      "builder": "build_reference_record_store"
+    },
+    {
+      "port": "LlmEventStorePort",
+      "builder": "build_reference_event_store"
+    },
+    {
+      "port": "LlmAuditStorePort",
+      "builder": "build_reference_audit_store"
+    },
+    {
+      "port": "LlmOutboxStorePort",
+      "builder": "build_reference_outbox_store"
+    },
+    {
+      "port": "LlmCandidateStorePort",
+      "builder": "build_reference_candidate_store"
+    },
+    {
+      "port": "LlmHabitStorePort",
+      "builder": "build_reference_habit_store"
+    },
+    {
+      "port": "LlmRetrievalTraceStorePort",
+      "builder": "build_reference_retrieval_trace_store"
+    },
+    {
+      "port": "LlmRetrieverPort",
+      "builder": "build_reference_retriever"
+    },
+    {
+      "port": "LlmIndexPort",
+      "builder": "build_reference_index"
+    },
+    {
+      "port": "ExternalLlmBridgePort",
+      "builder": "build_reference_external_bridge"
+    },
+    {
+      "port": "LlmContextAssemblerPort",
+      "builder": "build_reference_context_assembler"
+    },
+    {
+      "port": "LlmEvaluationPort",
+      "builder": "build_reference_evaluation"
+    }
+  ],
+  "providerKinds": ["search_engine", "graph_engine", "external_memory"],
+  "retrieverKinds": ["sql", "keyword", "time", "event", "graph", "external"],
+  "indexKinds": ["sql", "keyword", "time", "event", "graph"],
+  "requiredCoreVersion": "0.1.0",
+  "secretRefs": [],
+  "dataClasses": ["tenant", "personal", "internal"],
+  "capabilities": {
+    "canonicalStore": true,
+    "eventLog": true,
+    "candidateLifecycle": true,
+    "habitLearning": true,
+    "retrievalTrace": true,
+    "deletionPropagation": true,
+    "auditLog": true,
+    "outboxLog": true,
+    "embeddingRequired": false
+  },
+  "degradation": {
+    "mode": "fail_closed_reference_baseline",
+    "returnsStaleHits": false
+  },
+  "migration": {
+    "exportSupported": false,
+    "importSupported": false,
+    "dualWriteSupported": false,
+    "shadowReadSupported": true
+  },
+  "observability": {
+    "metricsPrefix": "sdkwork_llm_reference_profiles",
+    "redactsPayloads": true
+  },
+  "conformance": {
+    "suite": "sdkwork-llm-plugin-conformance",
+    "suiteVersion": "0.1.0"
+  }
+}

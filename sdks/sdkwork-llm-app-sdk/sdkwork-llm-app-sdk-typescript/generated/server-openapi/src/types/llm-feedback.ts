@@ -1,0 +1,9 @@
+export interface LlmFeedback {
+  feedbackId: string;
+  targetType: string;
+  targetId: string;
+  feedbackType: string;
+  rating?: number | null;
+  comment?: string | null;
+  createdAt: string;
+}

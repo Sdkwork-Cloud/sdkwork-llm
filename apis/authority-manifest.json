@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.api.authority.manifest",
+  "surfaces": [
+    {
+      "authorityPath": "apis/open-api/llm-open-api.openapi.json",
+      "sdkPath": "sdks/sdkwork-llm-sdk/openapi/llm-open-api.openapi.json"
+    },
+    {
+      "authorityPath": "apis/app-api/llm-app-api.openapi.json",
+      "sdkPath": "sdks/sdkwork-llm-app-sdk/openapi/llm-app-api.openapi.json"
+    },
+    {
+      "authorityPath": "apis/backend-api/llm-backend-api.openapi.json",
+      "sdkPath": "sdks/sdkwork-llm-backend-sdk/openapi/llm-backend-api.openapi.json"
+    }
+  ]
+}

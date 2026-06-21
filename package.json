@@ -1,0 +1,37 @@
+{
+  "name": "sdkwork-llm-workspace",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "packageManager": "pnpm@10.30.2",
+  "dependencies": {
+    "@sdkwork/app-topology": "file:../sdkwork-app-topology"
+  },
+  "scripts": {
+    "dev": "node scripts/llm-dev.mjs",
+    "build": "cargo build --workspace --release",
+    "test": "cargo test --workspace && node --test tests/contracts/route_manifest_openapi_parity_test.mjs && node --test tests/contracts/openapi_phase1_contract_test.mjs && node --test tests/contracts/schema_registry_phase1_contract_test.mjs && node --test tests/contract/database-framework.contract.test.mjs && node --test sdks/test/verify-sdk-ownership-boundaries.test.mjs",
+    "check": "pnpm check:architecture-alignment && pnpm check:pnpm-script-standard && pnpm check:agent-workflow-standard && pnpm topology:validate && pnpm db:validate",
+    "check:architecture-alignment": "node tools/check_sdkwork_llm_architecture_alignment.mjs",
+    "check:pnpm-script-standard": "node ../sdkwork-specs/tools/check-pnpm-script-standard.mjs --root . --product-prefix llm",
+    "check:agent-workflow-standard": "node ../sdkwork-specs/tools/check-agent-workflow-standard.mjs --root .",
+    "verify": "node tools/materialize_phase1_contracts.mjs && node sdks/standardize-llm-sdk-family.mjs && powershell -ExecutionPolicy Bypass -File tools/verify_phase1.ps1 && powershell -ExecutionPolicy Bypass -File tools/verify_sdkwork_structure.ps1 && powershell -ExecutionPolicy Bypass -File tools/verify_openapi_operation_ids.ps1 && cargo test --workspace && node --test tests/contracts/route_manifest_openapi_parity_test.mjs && node --test tests/contracts/openapi_phase1_contract_test.mjs && node --test tests/contracts/schema_registry_phase1_contract_test.mjs && node --test tests/contract/database-framework.contract.test.mjs && node --test sdks/test/verify-sdk-ownership-boundaries.test.mjs && pnpm check && node tools/check_sdkwork_llm_architecture_alignment.mjs",
+    "clean": "cargo clean",
+    "api:materialize": "node tools/materialize_phase1_contracts.mjs",
+    "api:check": "powershell -ExecutionPolicy Bypass -File tools/verify_phase1.ps1",
+    "sdk:generate:ts": "powershell -NoProfile -ExecutionPolicy Bypass -File sdks/sdkwork-llm-sdk/bin/generate-sdk.ps1 -Languages typescript && powershell -NoProfile -ExecutionPolicy Bypass -File sdks/sdkwork-llm-app-sdk/bin/generate-sdk.ps1 -Languages typescript && powershell -NoProfile -ExecutionPolicy Bypass -File sdks/sdkwork-llm-backend-sdk/bin/generate-sdk.ps1 -Languages typescript",
+    "sdk:generate": "node sdks/standardize-llm-sdk-family.mjs && node scripts/generate-llm-sdk.mjs",
+    "db:materialize:contract": "node tools/materialize_llm_database_contract.mjs",
+    "db:validate": "node ../sdkwork-specs/tools/check-database-framework-standard.mjs --root .",
+    "topology:validate": "node ../sdkwork-app-topology/scripts/sdkwork-topology.mjs validate --root . --spec specs/topology.spec.json",
+    "db:plan": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . plan",
+    "db:init": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . init",
+    "db:migrate": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . migrate",
+    "db:seed": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . seed",
+    "db:status": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . status",
+    "db:drift": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . drift",
+    "db:drift:check": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . drift-check",
+    "db:bootstrap": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . bootstrap",
+    "test:contract:database": "node ../sdkwork-specs/tools/check-database-framework-standard.mjs --root ."
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "sdkName": "sdkwork-llm-sdk",
+  "packageName": "@sdkwork/llm-sdk",
+  "sdkOwner": "sdkwork-llm",
+  "apiAuthority": "sdkwork-llm-open-api",
+  "sdkFamily": "sdkwork-llm-sdk",
+  "sdkType": "open",
+  "sdkSurface": "open",
+  "language": "typescript",
+  "apiPrefix": "/llm/v3/api",
+  "generationInputSpec": "openapi/llm-open-api.openapi.json",
+  "generatedOutput": "sdkwork-llm-sdk-typescript/generated/server-openapi",
+  "standardProfile": "sdkwork-v3",
+  "sdkDependencies": [],
+  "dependencyApiExports": [],
+  "dependencyApiSurfaces": [],
+  "ownerOnlyOperationCount": null,
+  "standardVersion": "2026-06-10",
+  "managedBy": "tools/materialize_phase1_contracts.mjs"
+}

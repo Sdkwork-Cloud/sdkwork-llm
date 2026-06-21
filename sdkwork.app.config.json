@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 3,
+  "kind": "sdkwork.app",
+  "app": {
+    "key": "sdkwork-llm",
+    "name": "SDKWork LLM",
+    "displayName": "SDKWork LLM",
+    "description": "SDKWork LLM service and SDK families for embedding-optional AI LLM memory, self-learning, habit LLM memory, and provider-switchable retrieval.",
+    "vendor": "SDKWork",
+    "officialWebsiteUrl": "https://sdkwork.com/apps/sdkwork-llm",
+    "supportUrl": "https://sdkwork.com/support",
+    "privacyPolicyUrl": "https://sdkwork.com/privacy",
+    "termsOfServiceUrl": "https://sdkwork.com/terms",
+    "iconUrl": "https://cdn.sdkwork.com/apps/sdkwork-llm/assets/icon-1024.png",
+    "appType": "SDK",
+    "versionSource": "manifest",
+    "identifiers": {
+      "packageName": null,
+      "bundleId": null,
+      "desktopAppId": null,
+      "containerImage": "registry.sdkwork.com/apps/sdkwork-llm"
+    }
+  },
+  "backend": {
+    "profileKey": "backend-root-admin",
+    "ownerMode": "tenant",
+    "grantMode": "current",
+    "platform": "API",
+    "appId": null,
+    "tenantId": "20001",
+    "organizationId": null
+  },
+  "runtime": {
+    "family": "server",
+    "framework": "rust-service",
+    "runtimes": [
+      "API"
+    ],
+    "deliveryModes": [
+      "CONTAINER_IMAGE"
+    ],
+    "defaultPlatform": "API",
+    "defaultArchitecture": "x64"
+  },
+  "media": {
+    "icons": {
+      "primary": {
+        "id": "sdkwork-llm-primary-icon",
+        "type": "ICON",
+        "purpose": "PRIMARY",
+        "url": "https://cdn.sdkwork.com/apps/sdkwork-llm/assets/icon-1024.png",
+        "platform": "API",
+        "locale": "en-US",
+        "width": 1024,
+        "height": 1024,
+        "format": "PNG",
+        "fileSizeBytes": 524288,
+        "alphaChannel": false,
+        "sortOrder": 0,
+        "enabled": true,
+        "metadata": {
+          "generatedPlaceholder": true
+        }
+      },
+      "platform": [],
+      "metadata": {
+        "generatedBy": "tools/materialize_phase1_contracts.mjs"
+      }
+    },
+    "screenshots": [],
+    "previews": [
+      {
+        "id": "sdkwork-llm-catalog-preview",
+        "type": "PREVIEW_IMAGE",
+        "purpose": "CATALOG_PREVIEW",
+        "url": "https://cdn.sdkwork.com/apps/sdkwork-llm/media/preview-cover.png",
+        "platform": "API",
+        "locale": "en-US",
+        "width": 1600,
+        "height": 900,
+        "format": "PNG",
+        "fileSizeBytes": 786432,
+        "alphaChannel": false,
+        "caption": "SDKWork LLM service preview.",
+        "sortOrder": 0,
+        "enabled": true,
+        "metadata": {
+          "generatedPlaceholder": true,
+          "altText": "SDKWork LLM service preview cover."
+        }
+      }
+    ],
+    "metadata": {
+      "assetVersion": "0.1.0",
+      "defaultLocale": "en-US"
+    }
+  },
+  "publish": {
+    "status": "DRAFT",
+    "installSkill": {
+      "name": "sdkwork-skills-app"
+    },
+    "platforms": [
+      "API"
+    ],
+    "installPlatforms": [
+      "API"
+    ],
+    "defaultPackageId": "container-x64-server-docker-image",
+    "storeUrl": "https://sdkwork.com/apps/sdkwork-llm",
+    "stores": [],
+    "config": {
+      "workspaceRoot": "sdkwork-llm",
+      "framework": "rust-service",
+      "managedBy": "tools/materialize_phase1_contracts.mjs"
+    }
+  },
+  "environments": {
+    "development": {
+      "accessUrl": "https://api-dev.sdkwork.com/apps/sdkwork-llm",
+      "deployUrl": "https://api-dev.sdkwork.com/apps/sdkwork-llm",
+      "deployEnv": "dev"
+    },
+    "test": {
+      "accessUrl": "https://api-test.sdkwork.com/apps/sdkwork-llm",
+      "deployUrl": "https://api-test.sdkwork.com/apps/sdkwork-llm",
+      "deployEnv": "test"
+    },
+    "production": {
+      "accessUrl": "https://api.sdkwork.com/apps/sdkwork-llm",
+      "deployUrl": "https://api.sdkwork.com/apps/sdkwork-llm",
+      "deployEnv": "production"
+    }
+  },
+  "artifacts": {
+    "installConfig": {
+      "defaultPackageId": "container-x64-server-docker-image",
+      "installCommand": "sdkwork install sdkwork-llm",
+      "launchCommand": "sdkwork open sdkwork-llm",
+      "uninstallCommand": "sdkwork uninstall sdkwork-llm",
+      "packages": [
+        {
+          "id": "container-x64-server-docker-image",
+          "name": "SDKWork LLM Server Container",
+          "sourceType": "CONTAINER_IMAGE",
+          "packageFormat": "DOCKER_IMAGE",
+          "platform": "API",
+          "url": "https://registry.sdkwork.com/v2/apps/sdkwork-llm/manifests/0.1.0",
+          "enabled": false,
+          "metadata": {
+            "image": "registry.sdkwork.com/apps/sdkwork-llm:0.1.0",
+            "digestRequiredBeforeRelease": true
+          },
+          "architecture": "x64",
+          "checksumAlgorithm": "SHA-256",
+          "checksum": "4d656d6f72794472616674436f6e74726163744f6e6c794e6f7452656c65617365"
+        }
+      ],
+      "metadata": {
+        "workspaceRoot": "sdkwork-llm",
+        "framework": "rust-service",
+        "packageManager": "cargo",
+        "contractPhase": "phase1-draft"
+      }
+    }
+  },
+  "release": {
+    "currentVersion": "0.1.0",
+    "defaultChannel": "DEV",
+    "latest": {
+      "DEV": "0.1.0"
+    },
+    "notes": [
+      {
+        "version": "0.1.0",
+        "releaseChannel": "DEV",
+        "title": "SDKWork LLM 0.1.0 Draft",
+        "summary": "Initial SDKWork LLM contract skeleton.",
+        "content": "Initial SDKWork LLM standard contracts for schema registry, app-api, backend-api, and SDK family metadata.",
+        "highlights": [
+          "Provider-routable LLM execution architecture",
+          "Multi-protocol LLM provider routing",
+          "SDKWork app-api and backend-api authority drafts"
+        ],
+        "packageIds": [
+          "container-x64-server-docker-image"
+        ],
+        "publishedAt": "2026-06-10T00:00:00Z",
+        "current": true,
+        "forceUpdate": false,
+        "minSupportedVersion": "0.1.0",
+        "metadata": {
+          "draft": true
+        }
+      }
+    ]
+  },
+  "security": {
+    "checksumRequired": false,
+    "signatureRequired": false,
+    "sbomRequired": false
+  },
+  "devApp": {
+    "build": {
+      "targets": []
+    },
+    "sourceRoot": "sdkwork-llm"
+  },
+  "metadata": {
+    "standardOwner": "sdkwork-platform",
+    "initializedAt": "2026-06-10T00:00:00Z",
+    "managedBy": "tools/materialize_phase1_contracts.mjs"
+  }
+}

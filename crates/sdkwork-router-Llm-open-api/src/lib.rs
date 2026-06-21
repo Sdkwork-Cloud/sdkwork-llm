@@ -1,0 +1,19 @@
+//! Open API route boundary for SDKWork LLM.
+
+pub mod auth;
+pub mod error;
+pub mod http_route_manifest;
+pub mod manifest;
+pub mod paths;
+pub mod routes;
+pub mod web_bootstrap;
+
+pub use error::{ApiError, ApiProblem};
+pub use http_route_manifest::open_route_manifest;
+pub use routes::{build_router_with_open_api, build_router_with_shared_open_api};
+pub use sdkwork_llm_contract::{LlmOpenApi, LlmOpenApiRequestContext, ProblemDetails};
+pub use web_bootstrap::{
+    llm_open_api_prefixes, llm_open_api_public_path_prefixes,
+    wrap_router_with_iam_database_web_framework, wrap_router_with_web_framework,
+    wrap_router_with_web_framework_from_env,
+};

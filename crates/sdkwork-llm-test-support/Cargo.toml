@@ -1,0 +1,8 @@
+[package]
+name = "sdkwork-llm-test-support"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+sdkwork-llm-spi = { path = "../sdkwork-llm-spi" }

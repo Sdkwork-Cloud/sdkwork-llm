@@ -1,0 +1,3365 @@
+use async_trait::async_trait;
+use sdkwork_llm_spi::{
+    AppendLlmAuditCommand, AppendLlmEventCommand, AppendLlmOutboxCommand,
+    AppendLlmRetrievalTraceCommand, ApproveLlmCandidateCommand, CreateLlmCandidateCommand,
+    CreateLlmRecordCommand, DecayLlmHabitCommand, DeleteLlmRecordCommand,
+    ListLlmRetrievalTracesQuery, ListPendingLlmOutboxQuery, MarkLlmOutboxFailedCommand,
+    MarkLlmOutboxPublishedCommand, LlmAuditRecord, LlmAuditStorePort, LlmCandidate,
+    LlmCandidateStorePort, LlmContextPackSnapshot, LlmDeletionReceipt, LlmEvent,
+    LlmEventStorePort, LlmHabit, LlmHabitStorePort, LlmOutboxEvent,
+    LlmOutboxStorePort, LlmRecord, LlmRecordStorePort, LlmRetrievalHitDraft,
+    LlmRetrievalTrace, LlmRetrievalTraceStorePort, LlmScopeContext, LlmSpiError,
+    LlmSpiResult, PromoteLlmHabitCommand, RejectLlmCandidateCommand,
+    RetrieveLlmAuditQuery, RetrieveLlmCandidateQuery, RetrieveLlmEventQuery,
+    RetrieveLlmHabitQuery, RetrieveLlmOutboxQuery, RetrieveLlmRecordQuery,
+    RetrieveLlmRetrievalTraceQuery, UpsertLlmHabitCommand,
+};
+use serde_json::Value;
+use sqlx::{sqlite::SqliteRow, Row, SqlitePool};
+use thiserror::Error;
+
+#[derive(Debug, Clone)]
+pub struct NativeSqlLlmStore {
+    pool: SqlitePool,
+}
+
+impl NativeSqlLlmStore {
+    pub async fn new_in_memory_sqlite() -> Result<Self, NativeSqlStoreError> {
+        let pool = SqlitePool::connect("sqlite::memory:").await?;
+        Self::from_sqlite_pool(pool).await
+    }
+
+    pub async fn from_sqlite_pool(pool: SqlitePool) -> Result<Self, NativeSqlStoreError> {
+        let store = Self { pool };
+        store.apply_sqlite_phase1_migration().await?;
+        Ok(store)
+    }
+
+    pub async fn install_sqlite_phase1_schema(
+        pool: &SqlitePool,
+    ) -> Result<(), NativeSqlStoreError> {
+        Self::from_sqlite_pool(pool.clone()).await?;
+        Ok(())
+    }
+
+    pub fn pool(&self) -> &SqlitePool {
+        &self.pool
+    }
+
+    pub async fn append_open_api_event(
+        &self,
+        scope: &LlmScopeContext,
+        event_id: &str,
+        event_type: &str,
+        source_type: &str,
+        event_time: &str,
+        payload: &Value,
+    ) -> Result<(), NativeSqlStoreError> {
+        self.ensure_space(scope).await?;
+        let payload_json = payload.to_string();
+        let payload_hash = stable_hash(&payload_json);
+
+        if let Some(existing) = self
+            .retrieve_event_idempotency_state(scope, event_id)
+            .await?
+        {
+            if existing.space_id == scope.space_id
+                && existing.payload_json == payload_json
+                && existing.payload_hash == payload_hash
+            {
+                return Ok(());
+            }
+
+            return Err(NativeSqlStoreError::EventConflict {
+                tenant_id: scope.tenant_id,
+                event_id: event_id.to_string(),
+            });
+        }
+
+        sqlx::query(
+            r#"
+            INSERT INTO llm_event (
+              uuid,
+              tenant_id,
+              space_id,
+              actor_type,
+              event_type,
+              source_type,
+              event_time,
+              payload_json,
+              payload_hash,
+              sensitivity_level,
+              ingestion_status,
+              created_at
+            )
+            VALUES (?, ?, ?, 'system', ?, ?, ?, ?, ?, 'internal', 'received', ?)
+            "#,
+        )
+        .bind(event_id)
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(event_type)
+        .bind(source_type)
+        .bind(event_time)
+        .bind(payload_json)
+        .bind(payload_hash)
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn retrieve_open_api_event_for_tenant(
+        &self,
+        tenant_id: i64,
+        event_id: &str,
+    ) -> Result<Option<NativeSqlOpenApiEventRow>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT uuid, space_id, event_type, source_type, event_time, payload_json, payload_hash, ingestion_status, created_at
+            FROM llm_event
+            WHERE tenant_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(event_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| {
+            let payload_json: String = row.get("payload_json");
+            NativeSqlOpenApiEventRow {
+                event_id: row.get("uuid"),
+                space_id: row.get("space_id"),
+                event_type: row.get("event_type"),
+                source_type: row.get("source_type"),
+                event_time: row.get("event_time"),
+                payload: parse_event_payload(&payload_json).unwrap_or(Value::Null),
+                payload_hash: row.get("payload_hash"),
+                ingestion_status: row.get("ingestion_status"),
+                created_at: row.get("created_at"),
+            }
+        }))
+    }
+
+    pub async fn retrieve_record_detail_for_tenant(
+        &self,
+        tenant_id: i64,
+        record_id: &str,
+    ) -> Result<Option<NativeSqlLlmRecordDetail>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT uuid, space_id, scope, memory_type, subject, predicate, object_text, canonical_text,
+                   confidence, status, created_at, updated_at, version
+            FROM llm_record
+            WHERE tenant_id = ?
+              AND uuid = ?
+              AND status <> 'deleted'
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(record_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(record_detail_from_row))
+    }
+
+    pub async fn retrieve_open_api_event(
+        &self,
+        scope: &LlmScopeContext,
+        event_id: &str,
+    ) -> Result<Option<NativeSqlOpenApiEventRow>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT uuid, space_id, event_type, source_type, event_time, payload_json, payload_hash, ingestion_status, created_at
+            FROM llm_event
+            WHERE tenant_id = ? AND space_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(event_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| {
+            let payload_json: String = row.get("payload_json");
+            NativeSqlOpenApiEventRow {
+                event_id: row.get("uuid"),
+                space_id: row.get("space_id"),
+                event_type: row.get("event_type"),
+                source_type: row.get("source_type"),
+                event_time: row.get("event_time"),
+                payload: parse_event_payload(&payload_json).unwrap_or(Value::Null),
+                payload_hash: row.get("payload_hash"),
+                ingestion_status: row.get("ingestion_status"),
+                created_at: row.get("created_at"),
+            }
+        }))
+    }
+
+    pub async fn create_record_open_api(
+        &self,
+        scope: &LlmScopeContext,
+        record_id: &str,
+        scope_label: &str,
+        record_type: &str,
+        subject: Option<&str>,
+        predicate: Option<&str>,
+        object_text: &str,
+        canonical_text: &str,
+    ) -> Result<(), NativeSqlStoreError> {
+        self.ensure_space(scope).await?;
+        sqlx::query(
+            r#"
+            INSERT INTO llm_record (
+              uuid,
+              tenant_id,
+              space_id,
+              scope,
+              memory_type,
+              subject,
+              predicate,
+              object_text,
+              canonical_text,
+              confidence,
+              evidence_count,
+              contradiction_count,
+              importance_score,
+              recency_score,
+              status,
+              sensitivity_level,
+              created_at,
+              updated_at,
+              version
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1.0, 1, 0, 0.5, 0.5, 'active', 'internal', ?, ?, 1)
+            "#,
+        )
+        .bind(record_id)
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(scope_label)
+        .bind(record_type)
+        .bind(subject)
+        .bind(predicate.unwrap_or("is"))
+        .bind(object_text)
+        .bind(canonical_text)
+        .bind(now_text())
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn retrieve_record_detail(
+        &self,
+        scope: &LlmScopeContext,
+        record_id: &str,
+    ) -> Result<Option<NativeSqlLlmRecordDetail>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT uuid, space_id, scope, memory_type, subject, predicate, object_text, canonical_text,
+                   confidence, status, created_at, updated_at, version
+            FROM llm_record
+            WHERE tenant_id = ?
+              AND space_id = ?
+              AND uuid = ?
+              AND status <> 'deleted'
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(record_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(record_detail_from_row))
+    }
+
+    pub async fn list_record_details(
+        &self,
+        scope: &LlmScopeContext,
+        query: Option<&str>,
+        page_size: i32,
+        cursor: Option<&str>,
+    ) -> Result<Vec<NativeSqlLlmRecordDetail>, NativeSqlStoreError> {
+        let page_size = page_size.clamp(1, 100) as i64;
+        let cursor = cursor.unwrap_or("");
+        let query = query.unwrap_or("").trim();
+
+        let rows = if query.is_empty() {
+            sqlx::query(
+                r#"
+                SELECT uuid, space_id, scope, memory_type, subject, predicate, object_text, canonical_text,
+                       confidence, status, created_at, updated_at, version
+                FROM llm_record
+                WHERE tenant_id = ?
+                  AND space_id = ?
+                  AND status <> 'deleted'
+                  AND uuid > ?
+                ORDER BY uuid ASC
+                LIMIT ?
+                "#,
+            )
+            .bind(scope.tenant_id)
+            .bind(scope.space_id)
+            .bind(cursor)
+            .bind(page_size + 1)
+            .fetch_all(&self.pool)
+            .await?
+        } else {
+            let pattern = format!("%{query}%");
+            sqlx::query(
+                r#"
+                SELECT uuid, space_id, scope, memory_type, subject, predicate, object_text, canonical_text,
+                       confidence, status, created_at, updated_at, version
+                FROM llm_record
+                WHERE tenant_id = ?
+                  AND space_id = ?
+                  AND status <> 'deleted'
+                  AND uuid > ?
+                  AND (canonical_text LIKE ? OR object_text LIKE ? OR IFNULL(subject, '') LIKE ?)
+                ORDER BY uuid ASC
+                LIMIT ?
+                "#,
+            )
+            .bind(scope.tenant_id)
+            .bind(scope.space_id)
+            .bind(cursor)
+            .bind(&pattern)
+            .bind(&pattern)
+            .bind(&pattern)
+            .bind(page_size + 1)
+            .fetch_all(&self.pool)
+            .await?
+        };
+
+        Ok(rows.into_iter().map(record_detail_from_row).collect())
+    }
+
+    pub async fn update_record_open_api(
+        &self,
+        scope: &LlmScopeContext,
+        record_id: &str,
+        canonical_text: Option<&str>,
+        subject: Option<&str>,
+    ) -> Result<Option<NativeSqlLlmRecordDetail>, NativeSqlStoreError> {
+        let existing = self.retrieve_record_detail(scope, record_id).await?;
+        let Some(existing) = existing else {
+            return Ok(None);
+        };
+
+        let canonical_text = canonical_text.unwrap_or(&existing.canonical_text);
+        let subject = subject.or(existing.subject.as_deref());
+
+        sqlx::query(
+            r#"
+            UPDATE llm_record
+            SET canonical_text = ?,
+                object_text = ?,
+                subject = ?,
+                updated_at = ?,
+                version = version + 1
+            WHERE tenant_id = ?
+              AND space_id = ?
+              AND uuid = ?
+              AND status <> 'deleted'
+            "#,
+        )
+        .bind(canonical_text)
+        .bind(canonical_text)
+        .bind(subject)
+        .bind(now_text())
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(record_id)
+        .execute(&self.pool)
+        .await?;
+
+        self.retrieve_record_detail(scope, record_id).await
+    }
+
+    pub async fn search_record_details_keyword(
+        &self,
+        scope: &LlmScopeContext,
+        query: &str,
+        top_k: i32,
+    ) -> Result<Vec<NativeSqlLlmRecordDetail>, NativeSqlStoreError> {
+        let pattern = format!("%{}%", query.trim());
+        let rows = sqlx::query(
+            r#"
+            SELECT uuid, space_id, scope, memory_type, subject, predicate, object_text, canonical_text,
+                   confidence, status, created_at, updated_at, version
+            FROM llm_record
+            WHERE tenant_id = ?
+              AND space_id = ?
+              AND status <> 'deleted'
+              AND (canonical_text LIKE ? OR object_text LIKE ? OR IFNULL(subject, '') LIKE ?)
+            ORDER BY updated_at DESC
+            LIMIT ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(&pattern)
+        .bind(&pattern)
+        .bind(&pattern)
+        .bind(top_k.max(1) as i64)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(record_detail_from_row).collect())
+    }
+
+    pub async fn append_event(
+        &self,
+        scope: &LlmScopeContext,
+        event_id: &str,
+        content: &str,
+    ) -> Result<(), NativeSqlStoreError> {
+        self.ensure_space(scope).await?;
+        let payload_json = serde_json::json!({ "content": content }).to_string();
+        let payload_hash = stable_hash(content);
+
+        if let Some(existing) = self
+            .retrieve_event_idempotency_state(scope, event_id)
+            .await?
+        {
+            if existing.space_id == scope.space_id
+                && existing.payload_json == payload_json
+                && existing.payload_hash == payload_hash
+            {
+                return Ok(());
+            }
+
+            return Err(NativeSqlStoreError::EventConflict {
+                tenant_id: scope.tenant_id,
+                event_id: event_id.to_string(),
+            });
+        }
+
+        sqlx::query(
+            r#"
+            INSERT INTO llm_event (
+              uuid,
+              tenant_id,
+              space_id,
+              actor_type,
+              event_type,
+              source_type,
+              event_time,
+              payload_json,
+              payload_hash,
+              sensitivity_level,
+              ingestion_status,
+              created_at
+            )
+            VALUES (?, ?, ?, 'system', 'llm.event.appended', 'api', ?, ?, ?, 'internal', 'received', ?)
+            "#,
+        )
+        .bind(event_id)
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(now_text())
+        .bind(payload_json)
+        .bind(payload_hash)
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn retrieve_event(
+        &self,
+        scope: &LlmScopeContext,
+        event_id: &str,
+    ) -> Result<Option<NativeSqlLlmEvent>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            "SELECT uuid, payload_json FROM llm_event WHERE tenant_id = ? AND space_id = ? AND uuid = ?",
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(event_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| {
+            let payload: String = row.get("payload_json");
+            let payload = parse_event_payload(&payload).unwrap_or(Value::Null);
+            NativeSqlLlmEvent {
+                event_id: row.get("uuid"),
+                content: payload
+                    .get("content")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string(),
+            }
+        }))
+    }
+
+    pub async fn retrieve_event_payload(
+        &self,
+        scope: &LlmScopeContext,
+        event_id: &str,
+    ) -> Result<Option<Value>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            "SELECT payload_json FROM llm_event WHERE tenant_id = ? AND space_id = ? AND uuid = ?",
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(event_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row
+            .map(|row| {
+                let payload: String = row.get("payload_json");
+                parse_event_payload(&payload)
+            })
+            .transpose()?)
+    }
+
+    pub async fn create_record(
+        &self,
+        scope: &LlmScopeContext,
+        record_id: &str,
+        subject: &str,
+        content: &str,
+    ) -> Result<(), NativeSqlStoreError> {
+        self.ensure_space(scope).await?;
+        sqlx::query(
+            r#"
+            INSERT INTO llm_record (
+              uuid,
+              tenant_id,
+              space_id,
+              scope,
+              memory_type,
+              subject,
+              predicate,
+              object_text,
+              canonical_text,
+              confidence,
+              evidence_count,
+              contradiction_count,
+              importance_score,
+              recency_score,
+              status,
+              sensitivity_level,
+              created_at,
+              updated_at
+            )
+            VALUES (?, ?, ?, 'user', 'semantic', ?, 'is', ?, ?, 1.0, 1, 0, 0.5, 0.5, 'active', 'internal', ?, ?)
+            "#,
+        )
+        .bind(record_id)
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(subject)
+        .bind(content)
+        .bind(content)
+        .bind(now_text())
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn retrieve_record(
+        &self,
+        scope: &LlmScopeContext,
+        record_id: &str,
+    ) -> Result<Option<NativeSqlLlmRecord>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT uuid, object_text
+            FROM llm_record
+            WHERE tenant_id = ?
+              AND space_id = ?
+              AND uuid = ?
+              AND status <> 'deleted'
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(record_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| NativeSqlLlmRecord {
+            record_id: row.get("uuid"),
+            content: row.get("object_text"),
+        }))
+    }
+
+    pub async fn mark_record_deleted(
+        &self,
+        scope: &LlmScopeContext,
+        record_id: &str,
+    ) -> Result<LlmDeletionReceipt, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT status, deleted_at
+            FROM llm_record
+            WHERE tenant_id = ? AND space_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(record_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let Some(row) = row else {
+            return Ok(LlmDeletionReceipt {
+                record_id: record_id.to_string(),
+                deleted: false,
+                already_deleted: false,
+            });
+        };
+
+        let status: String = row.get("status");
+        let deleted_at: Option<String> = row.get("deleted_at");
+
+        if status == "deleted" || deleted_at.is_some() {
+            return Ok(LlmDeletionReceipt {
+                record_id: record_id.to_string(),
+                deleted: true,
+                already_deleted: true,
+            });
+        }
+
+        sqlx::query(
+            r#"
+            UPDATE llm_record
+            SET status = 'deleted',
+                deleted_at = ?,
+                updated_at = ?,
+                version = version + 1
+            WHERE tenant_id = ? AND space_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(now_text())
+        .bind(now_text())
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(record_id)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(LlmDeletionReceipt {
+            record_id: record_id.to_string(),
+            deleted: true,
+            already_deleted: false,
+        })
+    }
+
+    pub async fn retrieve_record_lifecycle(
+        &self,
+        scope: &LlmScopeContext,
+        record_id: &str,
+    ) -> Result<Option<NativeSqlLlmRecordLifecycle>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT uuid, status, deleted_at
+            FROM llm_record
+            WHERE tenant_id = ? AND space_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(record_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| NativeSqlLlmRecordLifecycle {
+            record_id: row.get("uuid"),
+            status: row.get("status"),
+            deleted_at: row.get("deleted_at"),
+        }))
+    }
+
+    pub async fn append_audit(
+        &self,
+        scope: &LlmScopeContext,
+        audit_id: &str,
+        action: &str,
+        resource_type: &str,
+        resource_id: &str,
+        result: &str,
+    ) -> Result<NativeSqlLlmAuditRecord, NativeSqlStoreError> {
+        sqlx::query(
+            r#"
+            INSERT INTO llm_audit_log (
+              uuid,
+              tenant_id,
+              actor_type,
+              action,
+              resource_type,
+              resource_id,
+              result,
+              created_at
+            )
+            VALUES (?, ?, 'system', ?, ?, ?, ?, ?)
+            "#,
+        )
+        .bind(audit_id)
+        .bind(scope.tenant_id)
+        .bind(action)
+        .bind(resource_type)
+        .bind(resource_id)
+        .bind(result)
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(NativeSqlLlmAuditRecord {
+            audit_id: audit_id.to_string(),
+            action: action.to_string(),
+            resource_type: resource_type.to_string(),
+            resource_id: resource_id.to_string(),
+            result: result.to_string(),
+        })
+    }
+
+    pub async fn append_audit_with_metadata(
+        &self,
+        scope: &LlmScopeContext,
+        audit_id: &str,
+        action: &str,
+        resource_type: &str,
+        resource_id: &str,
+        result: &str,
+        metadata_json: &str,
+    ) -> Result<NativeSqlLlmAuditRecord, NativeSqlStoreError> {
+        sqlx::query(
+            r#"
+            INSERT INTO llm_audit_log (
+              uuid,
+              tenant_id,
+              actor_type,
+              action,
+              resource_type,
+              resource_id,
+              result,
+              metadata_json,
+              created_at
+            )
+            VALUES (?, ?, 'system', ?, ?, ?, ?, ?, ?)
+            "#,
+        )
+        .bind(audit_id)
+        .bind(scope.tenant_id)
+        .bind(action)
+        .bind(resource_type)
+        .bind(resource_id)
+        .bind(result)
+        .bind(metadata_json)
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(NativeSqlLlmAuditRecord {
+            audit_id: audit_id.to_string(),
+            action: action.to_string(),
+            resource_type: resource_type.to_string(),
+            resource_id: resource_id.to_string(),
+            result: result.to_string(),
+        })
+    }
+
+    pub async fn retrieve_governance_job_for_tenant(
+        &self,
+        tenant_id: i64,
+        job_id: &str,
+        resource_type: &str,
+    ) -> Result<Option<NativeSqlGovernanceJobRow>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT uuid, resource_type, result, metadata_json, created_at
+            FROM llm_audit_log
+            WHERE tenant_id = ?
+              AND uuid = ?
+              AND resource_type = ?
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(job_id)
+        .bind(resource_type)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| NativeSqlGovernanceJobRow {
+            job_id: row.get("uuid"),
+            resource_type: row.get("resource_type"),
+            result: row.get("result"),
+            metadata_json: row.get("metadata_json"),
+            created_at: row.get("created_at"),
+        }))
+    }
+
+    pub async fn save_admin_config_entity(
+        &self,
+        tenant_id: i64,
+        resource_type: &str,
+        entity_id: &str,
+        metadata_json: &str,
+    ) -> Result<(), NativeSqlStoreError> {
+        let audit_id = format!("{resource_type}:{entity_id}:{}", now_text());
+        sqlx::query(
+            r#"
+            INSERT INTO llm_audit_log (
+              uuid,
+              tenant_id,
+              actor_type,
+              action,
+              resource_type,
+              resource_id,
+              result,
+              metadata_json,
+              created_at
+            )
+            VALUES (?, ?, 'system', 'admin.config.save', ?, ?, 'active', ?, ?)
+            "#,
+        )
+        .bind(audit_id)
+        .bind(tenant_id)
+        .bind(resource_type)
+        .bind(entity_id)
+        .bind(metadata_json)
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    pub async fn retrieve_admin_config_entity(
+        &self,
+        tenant_id: i64,
+        resource_type: &str,
+        entity_id: &str,
+    ) -> Result<Option<String>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT metadata_json
+            FROM llm_audit_log
+            WHERE tenant_id = ?
+              AND resource_type = ?
+              AND resource_id = ?
+              AND action = 'admin.config.save'
+            ORDER BY created_at DESC
+            LIMIT 1
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(resource_type)
+        .bind(entity_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| row.get("metadata_json")))
+    }
+
+    pub async fn list_admin_config_entities(
+        &self,
+        tenant_id: i64,
+        resource_type: &str,
+        page_size: i32,
+    ) -> Result<Vec<(String, String)>, NativeSqlStoreError> {
+        let rows = sqlx::query(
+            r#"
+            SELECT resource_id, metadata_json
+            FROM llm_audit_log AS current
+            WHERE tenant_id = ?
+              AND resource_type = ?
+              AND action = 'admin.config.save'
+              AND created_at = (
+                SELECT MAX(created_at)
+                FROM llm_audit_log AS latest
+                WHERE latest.tenant_id = current.tenant_id
+                  AND latest.resource_type = current.resource_type
+                  AND latest.resource_id = current.resource_id
+                  AND latest.action = 'admin.config.save'
+              )
+            ORDER BY created_at DESC
+            LIMIT ?
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(resource_type)
+        .bind(page_size.clamp(1, 100) as i64)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| (row.get("resource_id"), row.get("metadata_json")))
+            .collect())
+    }
+
+    pub async fn retrieve_audit(
+        &self,
+        scope: &LlmScopeContext,
+        audit_id: &str,
+    ) -> Result<Option<NativeSqlLlmAuditRecord>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT uuid, action, resource_type, resource_id, result
+            FROM llm_audit_log
+            WHERE tenant_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(audit_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| NativeSqlLlmAuditRecord {
+            audit_id: row.get("uuid"),
+            action: row.get("action"),
+            resource_type: row.get("resource_type"),
+            resource_id: row.get("resource_id"),
+            result: row.get("result"),
+        }))
+    }
+
+    pub async fn append_outbox_event(
+        &self,
+        command: NativeSqlAppendOutboxEventCommand<'_>,
+    ) -> Result<NativeSqlLlmOutboxEvent, NativeSqlStoreError> {
+        let _payload: Value = serde_json::from_str(command.payload_json)?;
+
+        if let Some(existing) = self
+            .retrieve_outbox_idempotency_state(command.scope, command.outbox_id)
+            .await?
+        {
+            if existing.aggregate_type == command.aggregate_type
+                && existing.aggregate_id == command.aggregate_id
+                && existing.event_type == command.event_type
+                && existing.event_version == command.event_version
+                && existing.payload_json == command.payload_json
+            {
+                return Ok(existing.into_outbox_event(command.outbox_id));
+            }
+
+            return Err(NativeSqlStoreError::OutboxConflict {
+                tenant_id: command.scope.tenant_id,
+                outbox_id: command.outbox_id.to_string(),
+            });
+        }
+
+        sqlx::query(
+            r#"
+            INSERT INTO llm_outbox_event (
+              uuid,
+              tenant_id,
+              aggregate_type,
+              aggregate_id,
+              event_type,
+              event_version,
+              payload_json,
+              publish_state,
+              created_at,
+              updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+            "#,
+        )
+        .bind(command.outbox_id)
+        .bind(command.scope.tenant_id)
+        .bind(command.aggregate_type)
+        .bind(command.aggregate_id)
+        .bind(command.event_type)
+        .bind(command.event_version)
+        .bind(command.payload_json)
+        .bind(now_text())
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(NativeSqlLlmOutboxEvent {
+            outbox_id: command.outbox_id.to_string(),
+            aggregate_type: command.aggregate_type.to_string(),
+            aggregate_id: command.aggregate_id.to_string(),
+            event_type: command.event_type.to_string(),
+            event_version: command.event_version.to_string(),
+            payload_json: command.payload_json.to_string(),
+            publish_state: "pending".to_string(),
+            published_at: None,
+            retry_count: 0,
+        })
+    }
+
+    pub async fn retrieve_outbox_event(
+        &self,
+        scope: &LlmScopeContext,
+        outbox_id: &str,
+    ) -> Result<Option<NativeSqlLlmOutboxEvent>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT
+              uuid,
+              aggregate_type,
+              aggregate_id,
+              event_type,
+              event_version,
+              payload_json,
+              publish_state,
+              published_at,
+              retry_count
+            FROM llm_outbox_event
+            WHERE tenant_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(outbox_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| NativeSqlLlmOutboxEvent {
+            outbox_id: row.get("uuid"),
+            aggregate_type: row.get("aggregate_type"),
+            aggregate_id: row.get("aggregate_id"),
+            event_type: row.get("event_type"),
+            event_version: row.get("event_version"),
+            payload_json: row.get("payload_json"),
+            publish_state: row.get("publish_state"),
+            published_at: row.get("published_at"),
+            retry_count: row.get("retry_count"),
+        }))
+    }
+
+    pub async fn list_pending_outbox_events(
+        &self,
+        scope: &LlmScopeContext,
+        limit: u32,
+    ) -> Result<Vec<NativeSqlLlmOutboxEvent>, NativeSqlStoreError> {
+        let row_limit = i64::from(limit.max(1));
+        let rows = sqlx::query(
+            r#"
+            SELECT
+              uuid,
+              aggregate_type,
+              aggregate_id,
+              event_type,
+              event_version,
+              payload_json,
+              publish_state,
+              published_at,
+              retry_count
+            FROM llm_outbox_event
+            WHERE tenant_id = ? AND publish_state = 'pending'
+            ORDER BY created_at ASC, id ASC
+            LIMIT ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(row_limit)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| NativeSqlLlmOutboxEvent {
+                outbox_id: row.get("uuid"),
+                aggregate_type: row.get("aggregate_type"),
+                aggregate_id: row.get("aggregate_id"),
+                event_type: row.get("event_type"),
+                event_version: row.get("event_version"),
+                payload_json: row.get("payload_json"),
+                publish_state: row.get("publish_state"),
+                published_at: row.get("published_at"),
+                retry_count: row.get("retry_count"),
+            })
+            .collect())
+    }
+
+    pub async fn mark_outbox_published(
+        &self,
+        scope: &LlmScopeContext,
+        outbox_id: &str,
+    ) -> Result<Option<NativeSqlLlmOutboxEvent>, NativeSqlStoreError> {
+        sqlx::query(
+            r#"
+            UPDATE llm_outbox_event
+            SET publish_state = 'published',
+                published_at = ?,
+                updated_at = ?
+            WHERE tenant_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(now_text())
+        .bind(now_text())
+        .bind(scope.tenant_id)
+        .bind(outbox_id)
+        .execute(&self.pool)
+        .await?;
+
+        self.retrieve_outbox_event(scope, outbox_id).await
+    }
+
+    pub async fn mark_outbox_failed(
+        &self,
+        scope: &LlmScopeContext,
+        outbox_id: &str,
+    ) -> Result<Option<NativeSqlLlmOutboxEvent>, NativeSqlStoreError> {
+        sqlx::query(
+            r#"
+            UPDATE llm_outbox_event
+            SET publish_state = 'failed',
+                retry_count = retry_count + 1,
+                updated_at = ?
+            WHERE tenant_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(now_text())
+        .bind(scope.tenant_id)
+        .bind(outbox_id)
+        .execute(&self.pool)
+        .await?;
+
+        self.retrieve_outbox_event(scope, outbox_id).await
+    }
+
+    pub async fn create_candidate(
+        &self,
+        command: &CreateLlmCandidateCommand,
+    ) -> Result<LlmCandidate, NativeSqlStoreError> {
+        self.ensure_space(&command.scope).await?;
+        sqlx::query(
+            r#"
+            INSERT INTO llm_candidate (
+              uuid,
+              tenant_id,
+              space_id,
+              user_id,
+              candidate_type,
+              memory_type,
+              proposed_text,
+              proposed_payload_json,
+              evidence_json,
+              confidence,
+              decision_state,
+              created_at,
+              updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+            "#,
+        )
+        .bind(&command.candidate_id)
+        .bind(command.scope.tenant_id)
+        .bind(command.scope.space_id)
+        .bind(command.scope.user_id)
+        .bind(&command.candidate_type)
+        .bind(&command.record_type)
+        .bind(&command.proposed_text)
+        .bind(&command.proposed_payload_json)
+        .bind(&command.evidence_json)
+        .bind(command.confidence)
+        .bind(now_text())
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(LlmCandidate {
+            candidate_id: command.candidate_id.clone(),
+            candidate_type: command.candidate_type.clone(),
+            record_type: command.record_type.clone(),
+            proposed_text: command.proposed_text.clone(),
+            proposed_payload_json: command.proposed_payload_json.clone(),
+            evidence_json: command.evidence_json.clone(),
+            confidence: command.confidence,
+            decision_state: "pending".to_string(),
+            decision_reason: None,
+            decided_by: None,
+            decided_at: None,
+        })
+    }
+
+    pub async fn retrieve_candidate(
+        &self,
+        scope: &LlmScopeContext,
+        candidate_id: &str,
+    ) -> Result<Option<LlmCandidate>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT
+              uuid,
+              candidate_type,
+              memory_type,
+              proposed_text,
+              proposed_payload_json,
+              evidence_json,
+              confidence,
+              decision_state,
+              decision_reason,
+              decided_by,
+              decided_at
+            FROM llm_candidate
+            WHERE tenant_id = ? AND space_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(candidate_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(candidate_from_row))
+    }
+
+    pub async fn approve_candidate(
+        &self,
+        command: &ApproveLlmCandidateCommand,
+    ) -> Result<Option<LlmCandidate>, NativeSqlStoreError> {
+        self.decide_candidate(
+            &command.scope,
+            &command.candidate_id,
+            "approved",
+            command.decision_reason.as_deref(),
+            command.decided_by,
+        )
+        .await
+    }
+
+    pub async fn reject_candidate(
+        &self,
+        command: &RejectLlmCandidateCommand,
+    ) -> Result<Option<LlmCandidate>, NativeSqlStoreError> {
+        self.decide_candidate(
+            &command.scope,
+            &command.candidate_id,
+            "rejected",
+            command.decision_reason.as_deref(),
+            command.decided_by,
+        )
+        .await
+    }
+
+    pub async fn upsert_habit(
+        &self,
+        command: &UpsertLlmHabitCommand,
+    ) -> Result<LlmHabit, NativeSqlStoreError> {
+        self.ensure_space(&command.scope).await?;
+        sqlx::query(
+            r#"
+            INSERT INTO llm_habit (
+              uuid,
+              tenant_id,
+              space_id,
+              user_id,
+              habit_key,
+              habit_type,
+              description,
+              stage,
+              strength,
+              confidence,
+              support_count,
+              last_signal_at,
+              metadata_json,
+              created_at,
+              updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (tenant_id, space_id, user_id, habit_key)
+            DO UPDATE SET
+              uuid = excluded.uuid,
+              habit_type = excluded.habit_type,
+              description = excluded.description,
+              stage = excluded.stage,
+              strength = excluded.strength,
+              confidence = excluded.confidence,
+              support_count = excluded.support_count,
+              last_signal_at = excluded.last_signal_at,
+              metadata_json = excluded.metadata_json,
+              updated_at = excluded.updated_at,
+              version = llm_habit.version + 1
+            "#,
+        )
+        .bind(&command.habit_id)
+        .bind(command.scope.tenant_id)
+        .bind(command.scope.space_id)
+        .bind(command.user_id)
+        .bind(&command.habit_key)
+        .bind(&command.habit_type)
+        .bind(&command.description)
+        .bind(&command.stage)
+        .bind(command.strength)
+        .bind(command.confidence)
+        .bind(command.support_count)
+        .bind(now_text())
+        .bind(&command.metadata_json)
+        .bind(now_text())
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        self.retrieve_habit(&command.scope, command.user_id, &command.habit_key)
+            .await?
+            .ok_or_else(|| NativeSqlStoreError::InvariantViolation {
+                message: "habit upsert did not return a stored row".to_string(),
+            })
+    }
+
+    pub async fn retrieve_habit(
+        &self,
+        scope: &LlmScopeContext,
+        user_id: i64,
+        habit_key: &str,
+    ) -> Result<Option<LlmHabit>, NativeSqlStoreError> {
+        let row = self.fetch_habit(scope, user_id, habit_key).await?;
+        Ok(row.map(habit_from_row))
+    }
+
+    pub async fn promote_habit(
+        &self,
+        command: &PromoteLlmHabitCommand,
+    ) -> Result<Option<LlmHabit>, NativeSqlStoreError> {
+        let promoted_memory_row_id = match command.promoted_record_id.as_deref() {
+            Some(record_id) => self.lookup_record_row_id(&command.scope, record_id).await?,
+            None => None,
+        };
+
+        sqlx::query(
+            r#"
+            UPDATE llm_habit
+            SET stage = 'promoted',
+                promoted_memory_id = ?,
+                updated_at = ?,
+                version = version + 1
+            WHERE tenant_id = ? AND space_id = ? AND user_id = ? AND habit_key = ?
+            "#,
+        )
+        .bind(promoted_memory_row_id)
+        .bind(now_text())
+        .bind(command.scope.tenant_id)
+        .bind(command.scope.space_id)
+        .bind(command.user_id)
+        .bind(&command.habit_key)
+        .execute(&self.pool)
+        .await?;
+
+        self.retrieve_habit(&command.scope, command.user_id, &command.habit_key)
+            .await
+    }
+
+    pub async fn decay_habit(
+        &self,
+        command: &DecayLlmHabitCommand,
+    ) -> Result<Option<LlmHabit>, NativeSqlStoreError> {
+        sqlx::query(
+            r#"
+            UPDATE llm_habit
+            SET stage = 'decayed',
+                strength = CASE
+                  WHEN strength - ? < 0 THEN 0
+                  ELSE strength - ?
+                END,
+                updated_at = ?,
+                version = version + 1
+            WHERE tenant_id = ? AND space_id = ? AND user_id = ? AND habit_key = ?
+            "#,
+        )
+        .bind(command.strength_delta)
+        .bind(command.strength_delta)
+        .bind(now_text())
+        .bind(command.scope.tenant_id)
+        .bind(command.scope.space_id)
+        .bind(command.user_id)
+        .bind(&command.habit_key)
+        .execute(&self.pool)
+        .await?;
+
+        self.retrieve_habit(&command.scope, command.user_id, &command.habit_key)
+            .await
+    }
+
+    pub async fn append_retrieval_trace(
+        &self,
+        command: &AppendLlmRetrievalTraceCommand,
+    ) -> Result<LlmRetrievalTrace, NativeSqlStoreError> {
+        self.ensure_space(&command.scope).await?;
+        sqlx::query(
+            r#"
+            INSERT INTO llm_retrieval_trace (
+              uuid,
+              tenant_id,
+              space_id,
+              actor_id,
+              query_text,
+              query_hash,
+              retrievers_json,
+              latency_ms,
+              result_count,
+              degraded,
+              metadata_json,
+              created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            "#,
+        )
+        .bind(&command.trace_id)
+        .bind(command.scope.tenant_id)
+        .bind(command.scope.space_id)
+        .bind(&command.actor_id)
+        .bind(&command.query_text)
+        .bind(&command.query_hash)
+        .bind(&command.retrievers_json)
+        .bind(command.latency_ms)
+        .bind(command.hits.len() as i64)
+        .bind(bool_to_sqlite_int(command.degraded))
+        .bind(&command.metadata_json)
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        let trace_row_id = self
+            .lookup_retrieval_trace_row_id(&command.scope, &command.trace_id)
+            .await?
+            .ok_or_else(|| NativeSqlStoreError::InvariantViolation {
+                message: "retrieval trace append did not return a stored row".to_string(),
+            })?;
+
+        for hit in &command.hits {
+            let memory_row_id = match hit.record_id.as_deref() {
+                Some(record_id) => self.lookup_record_row_id(&command.scope, record_id).await?,
+                None => None,
+            };
+            sqlx::query(
+                r#"
+                INSERT INTO llm_retrieval_hit (
+                  uuid,
+                  tenant_id,
+                  retrieval_trace_id,
+                  memory_id,
+                  retriever_name,
+                  result_rank,
+                  raw_score,
+                  fused_score,
+                  explanation_json,
+                  status,
+                  created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                "#,
+            )
+            .bind(&hit.hit_id)
+            .bind(command.scope.tenant_id)
+            .bind(trace_row_id)
+            .bind(memory_row_id)
+            .bind(&hit.retriever_name)
+            .bind(hit.result_rank)
+            .bind(hit.raw_score)
+            .bind(hit.fused_score)
+            .bind(&hit.explanation_json)
+            .bind(&hit.status)
+            .bind(now_text())
+            .execute(&self.pool)
+            .await?;
+        }
+
+        if let Some(context_pack) = &command.context_pack {
+            sqlx::query(
+                r#"
+                INSERT INTO llm_context_pack (
+                  uuid,
+                  tenant_id,
+                  retrieval_trace_id,
+                  actor_id,
+                  query_text,
+                  pack_json,
+                  estimated_tokens,
+                  truncated,
+                  created_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                "#,
+            )
+            .bind(&context_pack.context_pack_id)
+            .bind(command.scope.tenant_id)
+            .bind(trace_row_id)
+            .bind(&command.actor_id)
+            .bind(&command.query_text)
+            .bind(&context_pack.pack_json)
+            .bind(context_pack.estimated_tokens)
+            .bind(bool_to_sqlite_int(context_pack.truncated))
+            .bind(now_text())
+            .execute(&self.pool)
+            .await?;
+        }
+
+        self.retrieve_retrieval_trace(&command.scope, &command.trace_id)
+            .await?
+            .ok_or_else(|| NativeSqlStoreError::InvariantViolation {
+                message: "retrieval trace append could not retrieve stored row".to_string(),
+            })
+    }
+
+    pub async fn retrieve_retrieval_trace_for_tenant(
+        &self,
+        tenant_id: i64,
+        trace_id: &str,
+    ) -> Result<Option<LlmRetrievalTrace>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            "SELECT space_id FROM llm_retrieval_trace WHERE tenant_id = ? AND uuid = ?",
+        )
+        .bind(tenant_id)
+        .bind(trace_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let Some(row) = row else {
+            return Ok(None);
+        };
+
+        let scope = LlmScopeContext {
+            tenant_id,
+            space_id: row.get("space_id"),
+            organization_id: None,
+            user_id: None,
+        };
+        self.retrieve_retrieval_trace(&scope, trace_id).await
+    }
+
+    pub async fn retrieve_retrieval_trace(
+        &self,
+        scope: &LlmScopeContext,
+        trace_id: &str,
+    ) -> Result<Option<LlmRetrievalTrace>, NativeSqlStoreError> {
+        let row = sqlx::query(retrieval_trace_select_sql())
+            .bind(scope.tenant_id)
+            .bind(scope.space_id)
+            .bind(trace_id)
+            .fetch_optional(&self.pool)
+            .await?;
+
+        let Some(row) = row else {
+            return Ok(None);
+        };
+
+        self.retrieval_trace_from_row(scope, row).await.map(Some)
+    }
+
+    pub async fn list_recent_retrieval_traces(
+        &self,
+        scope: &LlmScopeContext,
+        limit: u32,
+    ) -> Result<Vec<LlmRetrievalTrace>, NativeSqlStoreError> {
+        let rows = sqlx::query(
+            r#"
+            SELECT
+              id,
+              uuid,
+              actor_id,
+              query_text,
+              query_hash,
+              retrievers_json,
+              latency_ms,
+              result_count,
+              degraded,
+              metadata_json
+            FROM llm_retrieval_trace
+            WHERE tenant_id = ? AND space_id = ?
+            ORDER BY created_at DESC, id DESC
+            LIMIT ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(i64::from(limit.max(1)))
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut traces = Vec::with_capacity(rows.len());
+        for row in rows {
+            traces.push(self.retrieval_trace_from_row(scope, row).await?);
+        }
+
+        Ok(traces)
+    }
+
+    async fn apply_sqlite_phase1_migration(&self) -> Result<(), NativeSqlStoreError> {
+        let migration = include_str!("../migrations/sqlite/V202606100001__llm_phase1.sql");
+        for statement in migration.split(';') {
+            let statement = statement.trim();
+            if !statement.is_empty() {
+                sqlx::query(statement).execute(&self.pool).await?;
+            }
+        }
+        Ok(())
+    }
+
+    async fn retrieve_event_idempotency_state(
+        &self,
+        scope: &LlmScopeContext,
+        event_id: &str,
+    ) -> Result<Option<NativeSqlEventIdempotencyState>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT space_id, payload_json, payload_hash
+            FROM llm_event
+            WHERE tenant_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(event_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| NativeSqlEventIdempotencyState {
+            space_id: row.get("space_id"),
+            payload_json: row.get("payload_json"),
+            payload_hash: row.get("payload_hash"),
+        }))
+    }
+
+    async fn retrieve_outbox_idempotency_state(
+        &self,
+        scope: &LlmScopeContext,
+        outbox_id: &str,
+    ) -> Result<Option<NativeSqlOutboxIdempotencyState>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT
+              aggregate_type,
+              aggregate_id,
+              event_type,
+              event_version,
+              payload_json,
+              publish_state,
+              published_at,
+              retry_count
+            FROM llm_outbox_event
+            WHERE tenant_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(outbox_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| NativeSqlOutboxIdempotencyState {
+            aggregate_type: row.get("aggregate_type"),
+            aggregate_id: row.get("aggregate_id"),
+            event_type: row.get("event_type"),
+            event_version: row.get("event_version"),
+            payload_json: row.get("payload_json"),
+            publish_state: row.get("publish_state"),
+            published_at: row.get("published_at"),
+            retry_count: row.get("retry_count"),
+        }))
+    }
+
+    async fn decide_candidate(
+        &self,
+        scope: &LlmScopeContext,
+        candidate_id: &str,
+        decision_state: &str,
+        decision_reason: Option<&str>,
+        decided_by: Option<i64>,
+    ) -> Result<Option<LlmCandidate>, NativeSqlStoreError> {
+        sqlx::query(
+            r#"
+            UPDATE llm_candidate
+            SET decision_state = ?,
+                decision_reason = ?,
+                decided_by = ?,
+                decided_at = ?,
+                updated_at = ?,
+                version = version + 1
+            WHERE tenant_id = ? AND space_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(decision_state)
+        .bind(decision_reason)
+        .bind(decided_by)
+        .bind(now_text())
+        .bind(now_text())
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(candidate_id)
+        .execute(&self.pool)
+        .await?;
+
+        self.retrieve_candidate(scope, candidate_id).await
+    }
+
+    async fn fetch_habit(
+        &self,
+        scope: &LlmScopeContext,
+        user_id: i64,
+        habit_key: &str,
+    ) -> Result<Option<SqliteRow>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT
+              habit.uuid,
+              habit.user_id,
+              habit.habit_key,
+              habit.habit_type,
+              habit.description,
+              habit.stage,
+              habit.strength,
+              habit.confidence,
+              habit.support_count,
+              habit.last_signal_at,
+              promoted.uuid AS promoted_memory_uuid,
+              habit.decay_after,
+              habit.metadata_json
+            FROM llm_habit habit
+            LEFT JOIN llm_record promoted
+              ON promoted.id = habit.promoted_memory_id
+             AND promoted.tenant_id = habit.tenant_id
+             AND promoted.space_id = habit.space_id
+            WHERE habit.tenant_id = ?
+              AND habit.space_id = ?
+              AND habit.user_id = ?
+              AND habit.habit_key = ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(user_id)
+        .bind(habit_key)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row)
+    }
+
+    async fn lookup_record_row_id(
+        &self,
+        scope: &LlmScopeContext,
+        record_id: &str,
+    ) -> Result<Option<i64>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT id
+            FROM llm_record
+            WHERE tenant_id = ?
+              AND space_id = ?
+              AND uuid = ?
+              AND status <> 'deleted'
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(record_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| row.get("id")))
+    }
+
+    async fn lookup_retrieval_trace_row_id(
+        &self,
+        scope: &LlmScopeContext,
+        trace_id: &str,
+    ) -> Result<Option<i64>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT id
+            FROM llm_retrieval_trace
+            WHERE tenant_id = ? AND space_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(scope.space_id)
+        .bind(trace_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| row.get("id")))
+    }
+
+    async fn retrieval_trace_from_row(
+        &self,
+        scope: &LlmScopeContext,
+        row: SqliteRow,
+    ) -> Result<LlmRetrievalTrace, NativeSqlStoreError> {
+        let trace_row_id: i64 = row.get("id");
+        let hits = self.fetch_retrieval_hits(scope, trace_row_id).await?;
+        let context_pack = self.fetch_context_pack(scope, trace_row_id).await?;
+
+        Ok(LlmRetrievalTrace {
+            trace_id: row.get("uuid"),
+            actor_id: row.get("actor_id"),
+            query_text: row.get("query_text"),
+            query_hash: row.get("query_hash"),
+            retrievers_json: row.get("retrievers_json"),
+            latency_ms: row.get("latency_ms"),
+            result_count: row.get("result_count"),
+            degraded: sqlite_int_to_bool(row.get("degraded")),
+            metadata_json: row.get("metadata_json"),
+            hits,
+            context_pack,
+        })
+    }
+
+    async fn fetch_retrieval_hits(
+        &self,
+        scope: &LlmScopeContext,
+        trace_row_id: i64,
+    ) -> Result<Vec<LlmRetrievalHitDraft>, NativeSqlStoreError> {
+        let rows = sqlx::query(
+            r#"
+            SELECT
+              hit.uuid,
+              record.uuid AS memory_uuid,
+              hit.retriever_name,
+              hit.result_rank,
+              hit.raw_score,
+              hit.fused_score,
+              hit.explanation_json,
+              hit.status
+            FROM llm_retrieval_hit hit
+            LEFT JOIN llm_record record
+              ON record.id = hit.memory_id
+             AND record.tenant_id = hit.tenant_id
+             AND record.space_id = ?
+            WHERE hit.tenant_id = ?
+              AND hit.retrieval_trace_id = ?
+            ORDER BY hit.result_rank ASC, hit.id ASC
+            "#,
+        )
+        .bind(scope.space_id)
+        .bind(scope.tenant_id)
+        .bind(trace_row_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| LlmRetrievalHitDraft {
+                hit_id: row.get("uuid"),
+                record_id: row.get("memory_uuid"),
+                retriever_name: row.get("retriever_name"),
+                result_rank: row.get("result_rank"),
+                raw_score: row.get("raw_score"),
+                fused_score: row.get("fused_score"),
+                explanation_json: row.get("explanation_json"),
+                status: row.get("status"),
+            })
+            .collect())
+    }
+
+    async fn fetch_context_pack(
+        &self,
+        scope: &LlmScopeContext,
+        trace_row_id: i64,
+    ) -> Result<Option<LlmContextPackSnapshot>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT uuid, pack_json, estimated_tokens, truncated
+            FROM llm_context_pack
+            WHERE tenant_id = ? AND retrieval_trace_id = ?
+            ORDER BY id DESC
+            LIMIT 1
+            "#,
+        )
+        .bind(scope.tenant_id)
+        .bind(trace_row_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| LlmContextPackSnapshot {
+            context_pack_id: row.get("uuid"),
+            pack_json: row.get("pack_json"),
+            estimated_tokens: row.get("estimated_tokens"),
+            truncated: sqlite_int_to_bool(row.get("truncated")),
+        }))
+    }
+
+    pub async fn list_retrieval_traces_for_tenant(
+        &self,
+        tenant_id: i64,
+        space_id: Option<i64>,
+        page_size: i32,
+    ) -> Result<Vec<NativeSqlRetrievalTraceSummaryRow>, NativeSqlStoreError> {
+        let rows = if let Some(space_id) = space_id {
+            sqlx::query(
+                r#"
+                SELECT uuid, space_id, query_text, query_hash, result_count, degraded, created_at
+                FROM llm_retrieval_trace
+                WHERE tenant_id = ? AND space_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                "#,
+            )
+            .bind(tenant_id)
+            .bind(space_id)
+            .bind(page_size.max(1) as i64)
+            .fetch_all(&self.pool)
+            .await?
+        } else {
+            sqlx::query(
+                r#"
+                SELECT uuid, space_id, query_text, query_hash, result_count, degraded, created_at
+                FROM llm_retrieval_trace
+                WHERE tenant_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                "#,
+            )
+            .bind(tenant_id)
+            .bind(page_size.max(1) as i64)
+            .fetch_all(&self.pool)
+            .await?
+        };
+
+        Ok(rows
+            .into_iter()
+            .map(|row| NativeSqlRetrievalTraceSummaryRow {
+                trace_id: row.get("uuid"),
+                space_id: row.get("space_id"),
+                query_text: row.get("query_text"),
+                query_hash: row.get("query_hash"),
+                result_count: row.get("result_count"),
+                degraded: sqlite_int_to_bool(row.get("degraded")),
+                created_at: row.get("created_at"),
+            })
+            .collect())
+    }
+
+    pub async fn insert_context_pack_open_api(
+        &self,
+        tenant_id: i64,
+        space_id: i64,
+        context_pack_id: &str,
+        retrieval_trace_id: Option<&str>,
+        actor_id: Option<&str>,
+        query_text: Option<&str>,
+        pack_json: &str,
+        estimated_tokens: i64,
+        truncated: bool,
+    ) -> Result<(), NativeSqlStoreError> {
+        let trace_row_id = if let Some(trace_id) = retrieval_trace_id {
+            self.lookup_retrieval_trace_row_id_for_tenant(tenant_id, trace_id)
+                .await?
+        } else {
+            None
+        };
+
+        sqlx::query(
+            r#"
+            INSERT INTO llm_context_pack (
+              uuid,
+              tenant_id,
+              retrieval_trace_id,
+              actor_id,
+              query_text,
+              pack_json,
+              estimated_tokens,
+              truncated,
+              created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            "#,
+        )
+        .bind(context_pack_id)
+        .bind(tenant_id)
+        .bind(trace_row_id)
+        .bind(actor_id)
+        .bind(query_text)
+        .bind(pack_json)
+        .bind(estimated_tokens)
+        .bind(bool_to_sqlite_int(truncated))
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        let _ = space_id;
+        Ok(())
+    }
+
+    pub async fn retrieve_context_pack_for_tenant(
+        &self,
+        tenant_id: i64,
+        context_pack_id: &str,
+    ) -> Result<Option<NativeSqlContextPackRow>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT uuid, query_text, pack_json, estimated_tokens, truncated, created_at, retrieval_trace_id
+            FROM llm_context_pack
+            WHERE tenant_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(context_pack_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| NativeSqlContextPackRow {
+            context_pack_id: row.get("uuid"),
+            query_text: row.get("query_text"),
+            pack_json: row.get("pack_json"),
+            estimated_tokens: row.get("estimated_tokens"),
+            truncated: sqlite_int_to_bool(row.get("truncated")),
+            created_at: row.get("created_at"),
+            retrieval_trace_id: row.get("retrieval_trace_id"),
+        }))
+    }
+
+    async fn lookup_retrieval_trace_row_id_for_tenant(
+        &self,
+        tenant_id: i64,
+        trace_uuid: &str,
+    ) -> Result<Option<i64>, NativeSqlStoreError> {
+        let row =
+            sqlx::query("SELECT id FROM llm_retrieval_trace WHERE tenant_id = ? AND uuid = ?")
+                .bind(tenant_id)
+                .bind(trace_uuid)
+                .fetch_optional(&self.pool)
+                .await?;
+
+        Ok(row.map(|row| row.get("id")))
+    }
+
+    pub async fn list_spaces_for_tenant(
+        &self,
+        tenant_id: i64,
+        page_size: i32,
+    ) -> Result<Vec<NativeSqlLlmSpaceRow>, NativeSqlStoreError> {
+        let rows = sqlx::query(
+            r#"
+            SELECT id, uuid, tenant_id, owner_subject_type, owner_subject_id, space_type,
+                   display_name, default_scope, lifecycle_status, created_at, updated_at, version
+            FROM llm_space
+            WHERE tenant_id = ?
+            ORDER BY id ASC
+            LIMIT ?
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(page_size.max(1) as i64)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(space_row_from_sql).collect())
+    }
+
+    pub async fn retrieve_space_for_tenant(
+        &self,
+        tenant_id: i64,
+        space_id: i64,
+    ) -> Result<Option<NativeSqlLlmSpaceRow>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT id, uuid, tenant_id, owner_subject_type, owner_subject_id, space_type,
+                   display_name, default_scope, lifecycle_status, created_at, updated_at, version
+            FROM llm_space
+            WHERE tenant_id = ? AND id = ?
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(space_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(space_row_from_sql))
+    }
+
+    pub async fn create_space_record(
+        &self,
+        tenant_id: i64,
+        space_id: i64,
+        request: &NativeSqlCreateSpaceCommand,
+    ) -> Result<(), NativeSqlStoreError> {
+        sqlx::query(
+            r#"
+            INSERT INTO llm_space (
+              id, uuid, tenant_id, organization_id, owner_subject_type, owner_subject_id,
+              space_type, display_name, default_scope, lifecycle_status, created_at, updated_at, version
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, 0)
+            "#,
+        )
+        .bind(space_id)
+        .bind(format!("space-{space_id}"))
+        .bind(tenant_id)
+        .bind(request.organization_id)
+        .bind(&request.owner_subject_type)
+        .bind(&request.owner_subject_id)
+        .bind(&request.space_type)
+        .bind(&request.display_name)
+        .bind(&request.default_scope)
+        .bind(now_text())
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn update_space_record(
+        &self,
+        tenant_id: i64,
+        space_id: i64,
+        display_name: Option<&str>,
+        default_scope: Option<&str>,
+    ) -> Result<Option<NativeSqlLlmSpaceRow>, NativeSqlStoreError> {
+        let existing = self.retrieve_space_for_tenant(tenant_id, space_id).await?;
+        let Some(existing) = existing else {
+            return Ok(None);
+        };
+
+        let display_name = display_name.unwrap_or(&existing.display_name);
+        let default_scope =
+            default_scope.unwrap_or(existing.default_scope.as_deref().unwrap_or("user"));
+
+        sqlx::query(
+            r#"
+            UPDATE llm_space
+            SET display_name = ?, default_scope = ?, updated_at = ?, version = version + 1
+            WHERE tenant_id = ? AND id = ?
+            "#,
+        )
+        .bind(display_name)
+        .bind(default_scope)
+        .bind(now_text())
+        .bind(tenant_id)
+        .bind(space_id)
+        .execute(&self.pool)
+        .await?;
+
+        self.retrieve_space_for_tenant(tenant_id, space_id).await
+    }
+
+    pub async fn list_open_api_events_for_tenant(
+        &self,
+        tenant_id: i64,
+        space_id: Option<i64>,
+        page_size: i32,
+    ) -> Result<Vec<NativeSqlOpenApiEventRow>, NativeSqlStoreError> {
+        let rows = if let Some(space_id) = space_id {
+            sqlx::query(
+                r#"
+                SELECT uuid, space_id, event_type, source_type, event_time, payload_json, payload_hash, ingestion_status, created_at
+                FROM llm_event
+                WHERE tenant_id = ? AND space_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                "#,
+            )
+            .bind(tenant_id)
+            .bind(space_id)
+            .bind(page_size.max(1) as i64)
+            .fetch_all(&self.pool)
+            .await?
+        } else {
+            sqlx::query(
+                r#"
+                SELECT uuid, space_id, event_type, source_type, event_time, payload_json, payload_hash, ingestion_status, created_at
+                FROM llm_event
+                WHERE tenant_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                "#,
+            )
+            .bind(tenant_id)
+            .bind(page_size.max(1) as i64)
+            .fetch_all(&self.pool)
+            .await?
+        };
+
+        Ok(rows
+            .into_iter()
+            .map(|row| {
+                let payload_json: String = row.get("payload_json");
+                NativeSqlOpenApiEventRow {
+                    event_id: row.get("uuid"),
+                    space_id: row.get("space_id"),
+                    event_type: row.get("event_type"),
+                    source_type: row.get("source_type"),
+                    event_time: row.get("event_time"),
+                    payload: parse_event_payload(&payload_json).unwrap_or(Value::Null),
+                    payload_hash: row.get("payload_hash"),
+                    ingestion_status: row.get("ingestion_status"),
+                    created_at: row.get("created_at"),
+                }
+            })
+            .collect())
+    }
+
+    pub async fn list_candidates_for_tenant(
+        &self,
+        tenant_id: i64,
+        space_id: Option<i64>,
+        page_size: i32,
+    ) -> Result<Vec<NativeSqlCandidateRow>, NativeSqlStoreError> {
+        let rows = if let Some(space_id) = space_id {
+            sqlx::query(
+                r#"
+                SELECT uuid, space_id, candidate_type, memory_type, proposed_text, confidence,
+                       decision_state, created_at, updated_at
+                FROM llm_candidate
+                WHERE tenant_id = ? AND space_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                "#,
+            )
+            .bind(tenant_id)
+            .bind(space_id)
+            .bind(page_size.max(1) as i64)
+            .fetch_all(&self.pool)
+            .await?
+        } else {
+            sqlx::query(
+                r#"
+                SELECT uuid, space_id, candidate_type, memory_type, proposed_text, confidence,
+                       decision_state, created_at, updated_at
+                FROM llm_candidate
+                WHERE tenant_id = ?
+                ORDER BY created_at DESC
+                LIMIT ?
+                "#,
+            )
+            .bind(tenant_id)
+            .bind(page_size.max(1) as i64)
+            .fetch_all(&self.pool)
+            .await?
+        };
+
+        Ok(rows
+            .into_iter()
+            .map(|row| NativeSqlCandidateRow {
+                candidate_id: row.get("uuid"),
+                space_id: row.get("space_id"),
+                candidate_type: row.get("candidate_type"),
+                record_type: row.get("memory_type"),
+                proposed_text: row.get("proposed_text"),
+                confidence: row.get("confidence"),
+                decision_state: row.get("decision_state"),
+                created_at: row.get("created_at"),
+                updated_at: row.get("updated_at"),
+            })
+            .collect())
+    }
+
+    pub async fn retrieve_candidate_for_tenant(
+        &self,
+        tenant_id: i64,
+        candidate_id: &str,
+    ) -> Result<Option<NativeSqlCandidateRow>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT uuid, space_id, candidate_type, memory_type, proposed_text, confidence,
+                   decision_state, created_at, updated_at
+            FROM llm_candidate
+            WHERE tenant_id = ? AND uuid = ?
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(candidate_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| NativeSqlCandidateRow {
+            candidate_id: row.get("uuid"),
+            space_id: row.get("space_id"),
+            candidate_type: row.get("candidate_type"),
+            record_type: row.get("memory_type"),
+            proposed_text: row.get("proposed_text"),
+            confidence: row.get("confidence"),
+            decision_state: row.get("decision_state"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+        }))
+    }
+
+    pub async fn retrieve_candidate_detail_for_tenant(
+        &self,
+        tenant_id: i64,
+        candidate_id: &str,
+    ) -> Result<Option<NativeSqlCandidateDetailRow>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT
+              candidate.uuid,
+              candidate.space_id,
+              candidate.candidate_type,
+              candidate.memory_type,
+              candidate.proposed_text,
+              candidate.evidence_json,
+              candidate.confidence,
+              candidate.decision_state,
+              candidate.created_at,
+              candidate.updated_at,
+              record.uuid AS target_memory_uuid
+            FROM llm_candidate candidate
+            LEFT JOIN llm_record record
+              ON record.id = candidate.target_memory_id
+             AND record.tenant_id = candidate.tenant_id
+            WHERE candidate.tenant_id = ?
+              AND candidate.uuid = ?
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(candidate_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| NativeSqlCandidateDetailRow {
+            candidate_id: row.get("uuid"),
+            space_id: row.get("space_id"),
+            candidate_type: row.get("candidate_type"),
+            record_type: row.get("memory_type"),
+            proposed_text: row.get("proposed_text"),
+            evidence_json: row.get("evidence_json"),
+            confidence: row.get("confidence"),
+            decision_state: row.get("decision_state"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+            target_memory_uuid: row.get("target_memory_uuid"),
+        }))
+    }
+
+    pub async fn set_candidate_target_memory_for_tenant(
+        &self,
+        tenant_id: i64,
+        candidate_id: &str,
+        memory_uuid: &str,
+    ) -> Result<(), NativeSqlStoreError> {
+        let result = sqlx::query(
+            r#"
+            UPDATE llm_candidate
+            SET target_memory_id = (
+              SELECT id
+              FROM llm_record
+              WHERE tenant_id = ?
+                AND uuid = ?
+            ),
+            updated_at = ?
+            WHERE tenant_id = ?
+              AND uuid = ?
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(memory_uuid)
+        .bind(now_text())
+        .bind(tenant_id)
+        .bind(candidate_id)
+        .execute(&self.pool)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(NativeSqlStoreError::InvariantViolation {
+                message: "candidate or promoted memory not found".to_string(),
+            });
+        }
+
+        Ok(())
+    }
+
+    pub async fn list_habits_for_tenant(
+        &self,
+        tenant_id: i64,
+        space_id: Option<i64>,
+        stage: Option<&str>,
+        query_text: Option<&str>,
+        page_size: i32,
+    ) -> Result<Vec<NativeSqlHabitRow>, NativeSqlStoreError> {
+        let like_pattern = query_text.map(|value| format!("%{value}%"));
+        let rows = sqlx::query(
+            r#"
+            SELECT
+              habit.uuid,
+              habit.space_id,
+              habit.user_id,
+              habit.habit_key,
+              habit.habit_type,
+              habit.description,
+              habit.stage,
+              habit.strength,
+              habit.confidence,
+              habit.support_count,
+              habit.last_signal_at,
+              promoted.uuid AS promoted_memory_uuid,
+              habit.decay_after,
+              habit.metadata_json,
+              habit.created_at,
+              habit.updated_at,
+              habit.version
+            FROM llm_habit habit
+            LEFT JOIN llm_record promoted
+              ON promoted.id = habit.promoted_memory_id
+             AND promoted.tenant_id = habit.tenant_id
+             AND promoted.space_id = habit.space_id
+            WHERE habit.tenant_id = ?
+              AND (? IS NULL OR habit.space_id = ?)
+              AND (? IS NULL OR habit.stage = ?)
+              AND (
+                ? IS NULL
+                OR habit.description LIKE ?
+                OR habit.habit_key LIKE ?
+              )
+            ORDER BY habit.updated_at DESC
+            LIMIT ?
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(space_id)
+        .bind(space_id)
+        .bind(stage)
+        .bind(stage)
+        .bind(like_pattern.as_deref())
+        .bind(like_pattern.as_deref())
+        .bind(like_pattern.as_deref())
+        .bind(page_size.max(1) as i64)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(map_habit_row).collect())
+    }
+
+    pub async fn retrieve_habit_for_tenant(
+        &self,
+        tenant_id: i64,
+        habit_id: &str,
+    ) -> Result<Option<NativeSqlHabitRow>, NativeSqlStoreError> {
+        let row = sqlx::query(
+            r#"
+            SELECT
+              habit.uuid,
+              habit.space_id,
+              habit.user_id,
+              habit.habit_key,
+              habit.habit_type,
+              habit.description,
+              habit.stage,
+              habit.strength,
+              habit.confidence,
+              habit.support_count,
+              habit.last_signal_at,
+              promoted.uuid AS promoted_memory_uuid,
+              habit.decay_after,
+              habit.metadata_json,
+              habit.created_at,
+              habit.updated_at,
+              habit.version
+            FROM llm_habit habit
+            LEFT JOIN llm_record promoted
+              ON promoted.id = habit.promoted_memory_id
+             AND promoted.tenant_id = habit.tenant_id
+             AND promoted.space_id = habit.space_id
+            WHERE habit.tenant_id = ?
+              AND (habit.uuid = ? OR CAST(habit.id AS TEXT) = ?)
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(habit_id)
+        .bind(habit_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(map_habit_row))
+    }
+
+    pub async fn append_record_source_for_tenant(
+        &self,
+        tenant_id: i64,
+        source_id: &str,
+        memory_uuid: &str,
+        event_uuid: &str,
+        source_role: &str,
+        confidence_delta: Option<f64>,
+    ) -> Result<(), NativeSqlStoreError> {
+        let result = sqlx::query(
+            r#"
+            INSERT INTO llm_record_source (
+              uuid,
+              tenant_id,
+              memory_id,
+              event_id,
+              source_role,
+              confidence_delta,
+              created_at
+            )
+            SELECT
+              ?,
+              ?,
+              record.id,
+              event.id,
+              ?,
+              ?,
+              ?
+            FROM llm_record record
+            JOIN llm_event event
+              ON event.tenant_id = record.tenant_id
+             AND event.uuid = ?
+            WHERE record.tenant_id = ?
+              AND record.uuid = ?
+              AND record.status <> 'deleted'
+            "#,
+        )
+        .bind(source_id)
+        .bind(tenant_id)
+        .bind(source_role)
+        .bind(confidence_delta)
+        .bind(now_text())
+        .bind(event_uuid)
+        .bind(tenant_id)
+        .bind(memory_uuid)
+        .execute(&self.pool)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(NativeSqlStoreError::InvariantViolation {
+                message: "memory or event not found for record source".to_string(),
+            });
+        }
+
+        Ok(())
+    }
+
+    pub async fn list_record_sources_for_memory(
+        &self,
+        tenant_id: i64,
+        memory_uuid: &str,
+        page_size: i32,
+    ) -> Result<Vec<NativeSqlRecordSourceRow>, NativeSqlStoreError> {
+        let limit = page_size.clamp(1, 100) as i64 + 1;
+        let rows = sqlx::query(
+            r#"
+            SELECT
+              source.uuid AS source_uuid,
+              record.uuid AS memory_uuid,
+              event.uuid AS event_uuid,
+              source.source_role,
+              source.confidence_delta,
+              source.created_at
+            FROM llm_record_source source
+            JOIN llm_record record
+              ON record.id = source.memory_id
+             AND record.tenant_id = source.tenant_id
+            JOIN llm_event event
+              ON event.id = source.event_id
+             AND event.tenant_id = source.tenant_id
+            WHERE source.tenant_id = ?
+              AND record.uuid = ?
+            ORDER BY source.created_at DESC, source.id DESC
+            LIMIT ?
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(memory_uuid)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| NativeSqlRecordSourceRow {
+                source_uuid: row.get("source_uuid"),
+                memory_uuid: row.get("memory_uuid"),
+                event_uuid: row.get("event_uuid"),
+                source_role: row.get("source_role"),
+                confidence_delta: row.get("confidence_delta"),
+                created_at: row.get("created_at"),
+            })
+            .collect())
+    }
+
+    pub async fn list_audit_logs_for_tenant(
+        &self,
+        tenant_id: i64,
+        action: Option<&str>,
+        page_size: i32,
+    ) -> Result<Vec<NativeSqlAuditLogRow>, NativeSqlStoreError> {
+        let rows = sqlx::query(
+            r#"
+            SELECT uuid, action, resource_type, resource_id, result, created_at
+            FROM llm_audit_log
+            WHERE tenant_id = ?
+              AND (? IS NULL OR action = ?)
+            ORDER BY created_at DESC
+            LIMIT ?
+            "#,
+        )
+        .bind(tenant_id)
+        .bind(action)
+        .bind(action)
+        .bind(page_size.max(1) as i64)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| NativeSqlAuditLogRow {
+                audit_id: row.get("uuid"),
+                action: row.get("action"),
+                resource_type: row.get("resource_type"),
+                resource_id: row.get("resource_id"),
+                result: row.get("result"),
+                created_at: row.get("created_at"),
+            })
+            .collect())
+    }
+
+    async fn ensure_space(&self, scope: &LlmScopeContext) -> Result<(), NativeSqlStoreError> {
+        sqlx::query(
+            r#"
+            INSERT OR IGNORE INTO llm_space (
+              id,
+              uuid,
+              tenant_id,
+              owner_subject_type,
+              owner_subject_id,
+              space_type,
+              display_name,
+              default_scope,
+              lifecycle_status,
+              created_at,
+              updated_at,
+              version
+            )
+            VALUES (?, ?, ?, 'user', ?, 'personal', 'Default Memory Space', 'user', 'active', ?, ?, 0)
+            "#,
+        )
+        .bind(scope.space_id)
+        .bind(format!("space-{}", scope.space_id))
+        .bind(scope.tenant_id)
+        .bind(format!("tenant-{}-space-{}", scope.tenant_id, scope.space_id))
+        .bind(now_text())
+        .bind(now_text())
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl LlmEventStorePort for NativeSqlLlmStore {
+    async fn append(&self, command: AppendLlmEventCommand) -> LlmSpiResult<LlmEvent> {
+        self.append_event(&command.scope, &command.event_id, &command.content)
+            .await
+            .map_err(|err| port_error("LlmEventStorePort", err))?;
+
+        Ok(LlmEvent {
+            event_id: command.event_id,
+            content: command.content,
+        })
+    }
+
+    async fn retrieve(
+        &self,
+        query: RetrieveLlmEventQuery,
+    ) -> LlmSpiResult<Option<LlmEvent>> {
+        let event = self
+            .retrieve_event(&query.scope, &query.event_id)
+            .await
+            .map_err(|err| port_error("LlmEventStorePort", err))?;
+
+        Ok(event.map(|event| LlmEvent {
+            event_id: event.event_id,
+            content: event.content,
+        }))
+    }
+}
+
+#[async_trait]
+impl LlmRecordStorePort for NativeSqlLlmStore {
+    async fn create(&self, command: CreateLlmRecordCommand) -> LlmSpiResult<LlmRecord> {
+        self.create_record(&command.scope, &command.record_id, "spi", &command.content)
+            .await
+            .map_err(|err| port_error("LlmRecordStorePort", err))?;
+
+        Ok(LlmRecord {
+            record_id: command.record_id,
+            content: command.content,
+        })
+    }
+
+    async fn retrieve(
+        &self,
+        query: RetrieveLlmRecordQuery,
+    ) -> LlmSpiResult<Option<LlmRecord>> {
+        let record = self
+            .retrieve_record(&query.scope, &query.record_id)
+            .await
+            .map_err(|err| port_error("LlmRecordStorePort", err))?;
+
+        Ok(record.map(|record| LlmRecord {
+            record_id: record.record_id,
+            content: record.content,
+        }))
+    }
+
+    async fn mark_deleted(
+        &self,
+        command: DeleteLlmRecordCommand,
+    ) -> LlmSpiResult<LlmDeletionReceipt> {
+        self.mark_record_deleted(&command.scope, &command.record_id)
+            .await
+            .map_err(|err| port_error("LlmRecordStorePort", err))
+    }
+}
+
+#[async_trait]
+impl LlmAuditStorePort for NativeSqlLlmStore {
+    async fn append(
+        &self,
+        command: AppendLlmAuditCommand,
+    ) -> LlmSpiResult<LlmAuditRecord> {
+        let audit = self
+            .append_audit(
+                &command.scope,
+                &command.audit_id,
+                &command.action,
+                &command.resource_type,
+                &command.resource_id,
+                &command.result,
+            )
+            .await
+            .map_err(|err| port_error("LlmAuditStorePort", err))?;
+
+        Ok(LlmAuditRecord {
+            audit_id: audit.audit_id,
+            action: audit.action,
+            resource_type: audit.resource_type,
+            resource_id: audit.resource_id,
+            result: audit.result,
+        })
+    }
+
+    async fn retrieve(
+        &self,
+        query: RetrieveLlmAuditQuery,
+    ) -> LlmSpiResult<Option<LlmAuditRecord>> {
+        let audit = self
+            .retrieve_audit(&query.scope, &query.audit_id)
+            .await
+            .map_err(|err| port_error("LlmAuditStorePort", err))?;
+
+        Ok(audit.map(|audit| LlmAuditRecord {
+            audit_id: audit.audit_id,
+            action: audit.action,
+            resource_type: audit.resource_type,
+            resource_id: audit.resource_id,
+            result: audit.result,
+        }))
+    }
+}
+
+#[async_trait]
+impl LlmOutboxStorePort for NativeSqlLlmStore {
+    async fn append(
+        &self,
+        command: AppendLlmOutboxCommand,
+    ) -> LlmSpiResult<LlmOutboxEvent> {
+        let outbox = self
+            .append_outbox_event(NativeSqlAppendOutboxEventCommand {
+                scope: &command.scope,
+                outbox_id: &command.outbox_id,
+                aggregate_type: &command.aggregate_type,
+                aggregate_id: &command.aggregate_id,
+                event_type: &command.event_type,
+                event_version: &command.event_version,
+                payload_json: &command.payload_json,
+            })
+            .await
+            .map_err(|err| port_error("LlmOutboxStorePort", err))?;
+
+        Ok(LlmOutboxEvent {
+            outbox_id: outbox.outbox_id,
+            aggregate_type: outbox.aggregate_type,
+            aggregate_id: outbox.aggregate_id,
+            event_type: outbox.event_type,
+            event_version: outbox.event_version,
+            payload_json: outbox.payload_json,
+            publish_state: outbox.publish_state,
+            published_at: outbox.published_at,
+            retry_count: outbox.retry_count,
+        })
+    }
+
+    async fn retrieve(
+        &self,
+        query: RetrieveLlmOutboxQuery,
+    ) -> LlmSpiResult<Option<LlmOutboxEvent>> {
+        let outbox = self
+            .retrieve_outbox_event(&query.scope, &query.outbox_id)
+            .await
+            .map_err(|err| port_error("LlmOutboxStorePort", err))?;
+
+        Ok(outbox.map(into_spi_outbox_event))
+    }
+
+    async fn list_pending(
+        &self,
+        query: ListPendingLlmOutboxQuery,
+    ) -> LlmSpiResult<Vec<LlmOutboxEvent>> {
+        let outbox_events = self
+            .list_pending_outbox_events(&query.scope, query.limit)
+            .await
+            .map_err(|err| port_error("LlmOutboxStorePort", err))?;
+
+        Ok(outbox_events
+            .into_iter()
+            .map(into_spi_outbox_event)
+            .collect())
+    }
+
+    async fn mark_published(
+        &self,
+        command: MarkLlmOutboxPublishedCommand,
+    ) -> LlmSpiResult<Option<LlmOutboxEvent>> {
+        let outbox = self
+            .mark_outbox_published(&command.scope, &command.outbox_id)
+            .await
+            .map_err(|err| port_error("LlmOutboxStorePort", err))?;
+
+        Ok(outbox.map(into_spi_outbox_event))
+    }
+
+    async fn mark_failed(
+        &self,
+        command: MarkLlmOutboxFailedCommand,
+    ) -> LlmSpiResult<Option<LlmOutboxEvent>> {
+        let outbox = self
+            .mark_outbox_failed(&command.scope, &command.outbox_id)
+            .await
+            .map_err(|err| port_error("LlmOutboxStorePort", err))?;
+
+        Ok(outbox.map(into_spi_outbox_event))
+    }
+}
+
+#[async_trait]
+impl LlmCandidateStorePort for NativeSqlLlmStore {
+    async fn create(
+        &self,
+        command: CreateLlmCandidateCommand,
+    ) -> LlmSpiResult<LlmCandidate> {
+        self.create_candidate(&command)
+            .await
+            .map_err(|err| port_error("LlmCandidateStorePort", err))
+    }
+
+    async fn retrieve(
+        &self,
+        query: RetrieveLlmCandidateQuery,
+    ) -> LlmSpiResult<Option<LlmCandidate>> {
+        self.retrieve_candidate(&query.scope, &query.candidate_id)
+            .await
+            .map_err(|err| port_error("LlmCandidateStorePort", err))
+    }
+
+    async fn approve(
+        &self,
+        command: ApproveLlmCandidateCommand,
+    ) -> LlmSpiResult<Option<LlmCandidate>> {
+        self.approve_candidate(&command)
+            .await
+            .map_err(|err| port_error("LlmCandidateStorePort", err))
+    }
+
+    async fn reject(
+        &self,
+        command: RejectLlmCandidateCommand,
+    ) -> LlmSpiResult<Option<LlmCandidate>> {
+        self.reject_candidate(&command)
+            .await
+            .map_err(|err| port_error("LlmCandidateStorePort", err))
+    }
+}
+
+#[async_trait]
+impl LlmHabitStorePort for NativeSqlLlmStore {
+    async fn upsert(&self, command: UpsertLlmHabitCommand) -> LlmSpiResult<LlmHabit> {
+        self.upsert_habit(&command)
+            .await
+            .map_err(|err| port_error("LlmHabitStorePort", err))
+    }
+
+    async fn retrieve(
+        &self,
+        query: RetrieveLlmHabitQuery,
+    ) -> LlmSpiResult<Option<LlmHabit>> {
+        self.retrieve_habit(&query.scope, query.user_id, &query.habit_key)
+            .await
+            .map_err(|err| port_error("LlmHabitStorePort", err))
+    }
+
+    async fn promote(
+        &self,
+        command: PromoteLlmHabitCommand,
+    ) -> LlmSpiResult<Option<LlmHabit>> {
+        self.promote_habit(&command)
+            .await
+            .map_err(|err| port_error("LlmHabitStorePort", err))
+    }
+
+    async fn decay(
+        &self,
+        command: DecayLlmHabitCommand,
+    ) -> LlmSpiResult<Option<LlmHabit>> {
+        self.decay_habit(&command)
+            .await
+            .map_err(|err| port_error("LlmHabitStorePort", err))
+    }
+}
+
+#[async_trait]
+impl LlmRetrievalTraceStorePort for NativeSqlLlmStore {
+    async fn append(
+        &self,
+        command: AppendLlmRetrievalTraceCommand,
+    ) -> LlmSpiResult<LlmRetrievalTrace> {
+        self.append_retrieval_trace(&command)
+            .await
+            .map_err(|err| port_error("LlmRetrievalTraceStorePort", err))
+    }
+
+    async fn retrieve(
+        &self,
+        query: RetrieveLlmRetrievalTraceQuery,
+    ) -> LlmSpiResult<Option<LlmRetrievalTrace>> {
+        self.retrieve_retrieval_trace(&query.scope, &query.trace_id)
+            .await
+            .map_err(|err| port_error("LlmRetrievalTraceStorePort", err))
+    }
+
+    async fn list_recent(
+        &self,
+        query: ListLlmRetrievalTracesQuery,
+    ) -> LlmSpiResult<Vec<LlmRetrievalTrace>> {
+        self.list_recent_retrieval_traces(&query.scope, query.limit)
+            .await
+            .map_err(|err| port_error("LlmRetrievalTraceStorePort", err))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NativeSqlOpenApiEventRow {
+    pub event_id: String,
+    pub space_id: i64,
+    pub event_type: String,
+    pub source_type: String,
+    pub event_time: String,
+    pub payload: Value,
+    pub payload_hash: String,
+    pub ingestion_status: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NativeSqlLlmRecordDetail {
+    pub record_id: String,
+    pub space_id: i64,
+    pub scope: String,
+    pub record_type: String,
+    pub subject: Option<String>,
+    pub predicate: Option<String>,
+    pub object_text: String,
+    pub canonical_text: String,
+    pub confidence: f64,
+    pub status: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub version: i64,
+}
+
+fn record_detail_from_row(row: SqliteRow) -> NativeSqlLlmRecordDetail {
+    NativeSqlLlmRecordDetail {
+        record_id: row.get("uuid"),
+        space_id: row.get("space_id"),
+        scope: row.get("scope"),
+        record_type: row.get("memory_type"),
+        subject: row.get("subject"),
+        predicate: row.get("predicate"),
+        object_text: row.get("object_text"),
+        canonical_text: row.get("canonical_text"),
+        confidence: row.get("confidence"),
+        status: row.get("status"),
+        created_at: row.get("created_at"),
+        updated_at: row.get("updated_at"),
+        version: row.get("version"),
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NativeSqlLlmSpaceRow {
+    pub space_id: i64,
+    pub uuid: String,
+    pub tenant_id: i64,
+    pub owner_subject_type: String,
+    pub owner_subject_id: String,
+    pub space_type: String,
+    pub display_name: String,
+    pub default_scope: Option<String>,
+    pub lifecycle_status: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub version: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeSqlCreateSpaceCommand {
+    pub organization_id: Option<i64>,
+    pub owner_subject_type: String,
+    pub owner_subject_id: String,
+    pub space_type: String,
+    pub display_name: String,
+    pub default_scope: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NativeSqlCandidateRow {
+    pub candidate_id: String,
+    pub space_id: i64,
+    pub candidate_type: String,
+    pub record_type: String,
+    pub proposed_text: String,
+    pub confidence: f64,
+    pub decision_state: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NativeSqlCandidateDetailRow {
+    pub candidate_id: String,
+    pub space_id: i64,
+    pub candidate_type: String,
+    pub record_type: String,
+    pub proposed_text: String,
+    pub evidence_json: Option<String>,
+    pub confidence: f64,
+    pub decision_state: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub target_memory_uuid: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NativeSqlHabitRow {
+    pub habit_id: String,
+    pub space_id: i64,
+    pub user_id: i64,
+    pub habit_key: String,
+    pub habit_type: String,
+    pub description: String,
+    pub stage: String,
+    pub strength: f64,
+    pub confidence: f64,
+    pub support_count: i64,
+    pub last_signal_at: Option<String>,
+    pub promoted_memory_uuid: Option<String>,
+    pub decay_after: Option<String>,
+    pub metadata_json: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+    pub version: i64,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NativeSqlRecordSourceRow {
+    pub source_uuid: String,
+    pub memory_uuid: String,
+    pub event_uuid: String,
+    pub source_role: String,
+    pub confidence_delta: Option<f64>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeSqlAuditLogRow {
+    pub audit_id: String,
+    pub action: String,
+    pub resource_type: String,
+    pub resource_id: String,
+    pub result: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeSqlGovernanceJobRow {
+    pub job_id: String,
+    pub resource_type: String,
+    pub result: String,
+    pub metadata_json: Option<String>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NativeSqlRetrievalTraceSummaryRow {
+    pub trace_id: String,
+    pub space_id: i64,
+    pub query_text: Option<String>,
+    pub query_hash: String,
+    pub result_count: i64,
+    pub degraded: bool,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NativeSqlContextPackRow {
+    pub context_pack_id: String,
+    pub query_text: Option<String>,
+    pub pack_json: String,
+    pub estimated_tokens: i64,
+    pub truncated: bool,
+    pub created_at: String,
+    pub retrieval_trace_id: Option<i64>,
+}
+
+fn space_row_from_sql(row: SqliteRow) -> NativeSqlLlmSpaceRow {
+    NativeSqlLlmSpaceRow {
+        space_id: row.get("id"),
+        uuid: row.get("uuid"),
+        tenant_id: row.get("tenant_id"),
+        owner_subject_type: row.get("owner_subject_type"),
+        owner_subject_id: row.get("owner_subject_id"),
+        space_type: row.get("space_type"),
+        display_name: row.get("display_name"),
+        default_scope: row.get("default_scope"),
+        lifecycle_status: row.get("lifecycle_status"),
+        created_at: row.get("created_at"),
+        updated_at: row.get("updated_at"),
+        version: row.get("version"),
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeSqlLlmEvent {
+    pub event_id: String,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeSqlLlmRecord {
+    pub record_id: String,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeSqlLlmRecordLifecycle {
+    pub record_id: String,
+    pub status: String,
+    pub deleted_at: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeSqlLlmAuditRecord {
+    pub audit_id: String,
+    pub action: String,
+    pub resource_type: String,
+    pub resource_id: String,
+    pub result: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeSqlLlmOutboxEvent {
+    pub outbox_id: String,
+    pub aggregate_type: String,
+    pub aggregate_id: String,
+    pub event_type: String,
+    pub event_version: String,
+    pub payload_json: String,
+    pub publish_state: String,
+    pub published_at: Option<String>,
+    pub retry_count: i64,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct NativeSqlAppendOutboxEventCommand<'a> {
+    pub scope: &'a LlmScopeContext,
+    pub outbox_id: &'a str,
+    pub aggregate_type: &'a str,
+    pub aggregate_id: &'a str,
+    pub event_type: &'a str,
+    pub event_version: &'a str,
+    pub payload_json: &'a str,
+}
+
+#[derive(Debug, Error)]
+pub enum NativeSqlStoreError {
+    #[error("native SQL store database error: {0}")]
+    Database(#[from] sqlx::Error),
+    #[error("native SQL store JSON payload error: {0}")]
+    Json(#[from] serde_json::Error),
+    #[error("native SQL event append conflict for tenant {tenant_id} event {event_id}")]
+    EventConflict { tenant_id: i64, event_id: String },
+    #[error("native SQL outbox append conflict for tenant {tenant_id} outbox event {outbox_id}")]
+    OutboxConflict { tenant_id: i64, outbox_id: String },
+    #[error("native SQL store invariant violation: {message}")]
+    InvariantViolation { message: String },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NativeSqlEventIdempotencyState {
+    space_id: i64,
+    payload_json: String,
+    payload_hash: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NativeSqlOutboxIdempotencyState {
+    aggregate_type: String,
+    aggregate_id: String,
+    event_type: String,
+    event_version: String,
+    payload_json: String,
+    publish_state: String,
+    published_at: Option<String>,
+    retry_count: i64,
+}
+
+impl NativeSqlOutboxIdempotencyState {
+    fn into_outbox_event(self, outbox_id: &str) -> NativeSqlLlmOutboxEvent {
+        NativeSqlLlmOutboxEvent {
+            outbox_id: outbox_id.to_string(),
+            aggregate_type: self.aggregate_type,
+            aggregate_id: self.aggregate_id,
+            event_type: self.event_type,
+            event_version: self.event_version,
+            payload_json: self.payload_json,
+            publish_state: self.publish_state,
+            published_at: self.published_at,
+            retry_count: self.retry_count,
+        }
+    }
+}
+
+fn into_spi_outbox_event(outbox: NativeSqlLlmOutboxEvent) -> LlmOutboxEvent {
+    LlmOutboxEvent {
+        outbox_id: outbox.outbox_id,
+        aggregate_type: outbox.aggregate_type,
+        aggregate_id: outbox.aggregate_id,
+        event_type: outbox.event_type,
+        event_version: outbox.event_version,
+        payload_json: outbox.payload_json,
+        publish_state: outbox.publish_state,
+        published_at: outbox.published_at,
+        retry_count: outbox.retry_count,
+    }
+}
+
+fn candidate_from_row(row: SqliteRow) -> LlmCandidate {
+    LlmCandidate {
+        candidate_id: row.get("uuid"),
+        candidate_type: row.get("candidate_type"),
+        record_type: row.get("memory_type"),
+        proposed_text: row.get("proposed_text"),
+        proposed_payload_json: row.get("proposed_payload_json"),
+        evidence_json: row.get("evidence_json"),
+        confidence: row.get("confidence"),
+        decision_state: row.get("decision_state"),
+        decision_reason: row.get("decision_reason"),
+        decided_by: row.get("decided_by"),
+        decided_at: row.get("decided_at"),
+    }
+}
+
+fn map_habit_row(row: SqliteRow) -> NativeSqlHabitRow {
+    NativeSqlHabitRow {
+        habit_id: row.get("uuid"),
+        space_id: row.get("space_id"),
+        user_id: row.get("user_id"),
+        habit_key: row.get("habit_key"),
+        habit_type: row.get("habit_type"),
+        description: row.get("description"),
+        stage: row.get("stage"),
+        strength: row.get("strength"),
+        confidence: row.get("confidence"),
+        support_count: row.get("support_count"),
+        last_signal_at: row.get("last_signal_at"),
+        promoted_memory_uuid: row.get("promoted_memory_uuid"),
+        decay_after: row.get("decay_after"),
+        metadata_json: row.get("metadata_json"),
+        created_at: row.get("created_at"),
+        updated_at: row.get("updated_at"),
+        version: row.get("version"),
+    }
+}
+
+fn habit_from_row(row: SqliteRow) -> LlmHabit {
+    LlmHabit {
+        habit_id: row.get("uuid"),
+        user_id: row.get("user_id"),
+        habit_key: row.get("habit_key"),
+        habit_type: row.get("habit_type"),
+        description: row.get("description"),
+        stage: row.get("stage"),
+        strength: row.get("strength"),
+        confidence: row.get("confidence"),
+        support_count: row.get("support_count"),
+        last_signal_at: row.get("last_signal_at"),
+        promoted_record_id: row.get("promoted_memory_uuid"),
+        decay_after: row.get("decay_after"),
+        metadata_json: row.get("metadata_json"),
+    }
+}
+
+fn retrieval_trace_select_sql() -> &'static str {
+    r#"
+    SELECT
+      id,
+      uuid,
+      actor_id,
+      query_text,
+      query_hash,
+      retrievers_json,
+      latency_ms,
+      result_count,
+      degraded,
+      metadata_json
+    FROM llm_retrieval_trace
+    WHERE tenant_id = ? AND space_id = ? AND uuid = ?
+    "#
+}
+
+fn bool_to_sqlite_int(value: bool) -> i64 {
+    if value {
+        1
+    } else {
+        0
+    }
+}
+
+fn sqlite_int_to_bool(value: i64) -> bool {
+    value != 0
+}
+
+pub(crate) fn now_text() -> String {
+    sdkwork_utils_rust::format_datetime(sdkwork_utils_rust::now(), None)
+}
+
+fn stable_hash(value: &str) -> String {
+    let mut hash = 0xcbf29ce484222325u64;
+    for byte in value.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    format!("fnv1a64:{hash:016x}")
+}
+
+fn parse_event_payload(payload: &str) -> Result<Value, serde_json::Error> {
+    serde_json::from_str(payload)
+}
+
+fn port_error(port: &str, error: NativeSqlStoreError) -> LlmSpiError {
+    if let NativeSqlStoreError::EventConflict { event_id, .. } = error {
+        return LlmSpiError::IdempotencyConflict {
+            idempotency_key: event_id,
+        };
+    }
+    if let NativeSqlStoreError::OutboxConflict { outbox_id, .. } = error {
+        return LlmSpiError::IdempotencyConflict {
+            idempotency_key: outbox_id,
+        };
+    }
+
+    LlmSpiError::PortOperationFailed {
+        port: port.to_string(),
+        message: error.to_string(),
+    }
+}
