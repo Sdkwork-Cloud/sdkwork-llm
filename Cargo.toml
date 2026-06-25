@@ -52,8 +52,8 @@ sdkwork-router-llm-app-api = { path = "crates/sdkwork-router-llm-app-api" }
 sdkwork-router-llm-backend-api = { path = "crates/sdkwork-router-llm-backend-api" }
 sdkwork-llm-api-server = { path = "crates/sdkwork-llm-api-server" }
 
-sdkwork-iam-web-adapter = { path = "../sdkwork-appbase/crates/sdkwork-iam-web-adapter" }
-sdkwork-router-iam-app-api = { path = "../sdkwork-appbase/crates/sdkwork-router-iam-app-api" }
+sdkwork-iam-web-adapter = { path = "../sdkwork-iam/crates/sdkwork-iam-web-adapter" }
+sdkwork-router-iam-app-api = { path = "../sdkwork-iam/crates/sdkwork-router-iam-app-api" }
 sdkwork-web-core = { path = "../sdkwork-web-framework/crates/sdkwork-web-core" }
 sdkwork-web-axum = { path = "../sdkwork-web-framework/crates/sdkwork-web-axum" }
 sdkwork-database-config = { path = "../sdkwork-database/crates/sdkwork-database-config", package = "sdkwork-database-config" }
