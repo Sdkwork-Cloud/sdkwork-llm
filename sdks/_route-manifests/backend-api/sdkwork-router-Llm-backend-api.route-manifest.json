@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "sdkwork.route.manifest",
-  "packageName": "sdkwork-router-llm-backend-api",
+  "packageName": "sdkwork-routes-llm-backend-api",
   "surface": "backend-api",
   "owner": "sdkwork-llm",
   "domain": "intelligence",
@@ -10,8 +10,8 @@
   "sdkFamily": "sdkwork-llm-backend-sdk",
   "prefix": "/backend/v3/api",
   "source": {
-    "crateRoot": "crates/sdkwork-router-llm-backend-api",
-    "crateImport": "sdkwork_router_llm_backend_api",
+    "crateRoot": "crates/sdkwork-routes-llm-backend-api",
+    "crateImport": "sdkwork_routes_llm_backend_api",
     "openApiAuthority": "sdks/sdkwork-llm-backend-sdk/openapi/llm-backend-api.openapi.json"
   },
   "routes": [

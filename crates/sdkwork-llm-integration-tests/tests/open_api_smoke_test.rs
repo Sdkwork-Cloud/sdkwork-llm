@@ -2,7 +2,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use sdkwork_intelligence_llm_service::OpenLlmService;
 use sdkwork_llm_plugin_native_sql::NativeSqlLlmStore;
-use sdkwork_router_llm_open_api::{build_router_with_open_api, wrap_router_with_web_framework};
+use sdkwork_routes_llm_open_api::{build_router_with_open_api, wrap_router_with_web_framework};
 use sdkwork_web_core::DefaultWebRequestContextResolver;
 use tower::util::ServiceExt;
 

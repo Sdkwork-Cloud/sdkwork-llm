@@ -1,21 +1,18 @@
-use axum::{routing::get, Router};
+use axum::Router;
 use sdkwork_intelligence_llm_repository_sqlx::bootstrap_llm_data_plane_from_env;
 use sdkwork_intelligence_llm_service::OpenLlmService;
-use sdkwork_router_llm_app_api::{
+use sdkwork_routes_llm_app_api::{
     build_router_with_shared_app_api, wrap_router_with_web_framework_from_env as wrap_app_router,
 };
-use sdkwork_router_llm_backend_api::{
+use sdkwork_routes_llm_backend_api::{
     build_router_with_shared_backend_api,
     wrap_router_with_web_framework_from_env as wrap_backend_router,
 };
-use sdkwork_router_llm_open_api::{
+use sdkwork_routes_llm_open_api::{
     build_router_with_shared_open_api, wrap_router_with_web_framework_from_env as wrap_open_router,
 };
+use sdkwork_web_bootstrap::{service_router, ServiceRouterConfig};
 use std::sync::Arc;
-
-async fn healthz() -> &'static str {
-    "ok"
-}
 
 pub async fn build_router() -> Result<Router, String> {
     let data_plane = bootstrap_llm_data_plane_from_env().await?;
@@ -29,9 +26,13 @@ pub async fn build_router() -> Result<Router, String> {
     let app_router = wrap_app_router(app_business_router).await;
     let backend_router = wrap_backend_router(backend_business_router).await;
 
-    Ok(Router::new()
+    let business_router = Router::new()
         .merge(open_router)
         .merge(app_router)
-        .merge(backend_router)
-        .route("/healthz", get(healthz)))
+        .merge(backend_router);
+
+    Ok(service_router(
+        business_router,
+        ServiceRouterConfig::default().with_always_ready(),
+    ))
 }

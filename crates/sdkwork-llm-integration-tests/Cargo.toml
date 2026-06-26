@@ -15,8 +15,8 @@ sdkwork-intelligence-llm-service.workspace = true
 sdkwork-llm-contract.workspace = true
 sdkwork-llm-plugin-native-sql.workspace = true
 sdkwork-llm-spi.workspace = true
-sdkwork-router-llm-app-api.workspace = true
-sdkwork-router-llm-open-api.workspace = true
-sdkwork-router-llm-backend-api.workspace = true
+sdkwork-routes-llm-app-api.workspace = true
+sdkwork-routes-llm-open-api.workspace = true
+sdkwork-routes-llm-backend-api.workspace = true
 sdkwork-web-core.workspace = true
 sdkwork-llm-api-server = { path = "../sdkwork-llm-api-server" }

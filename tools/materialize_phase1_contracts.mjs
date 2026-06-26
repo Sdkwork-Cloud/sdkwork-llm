@@ -2844,43 +2844,43 @@ const routeSurfaceProfiles = [
     surface: "open-api",
     openapiPath: "sdks/sdkwork-llm-sdk/openapi/llm-open-api.openapi.json",
     apisPath: "apis/open-api/llm-open-api.openapi.json",
-    packageName: "sdkwork-router-llm-open-api",
-    crateDir: "crates/sdkwork-router-llm-open-api",
-    crateImport: "sdkwork_router_llm_open_api",
+    packageName: "sdkwork-routes-llm-open-api",
+    crateDir: "crates/sdkwork-routes-llm-open-api",
+    crateImport: "sdkwork_routes_llm_open_api",
     manifestFn: "open_route_manifest",
     apiAuthority: "sdkwork-llm-open-api",
     sdkFamily: "sdkwork-llm-sdk",
     prefix: llmOpenApiPrefix,
     routeManifestDir: "sdks/_route-manifests/open-api",
-    routeManifestFile: "sdkwork-router-llm-open-api.route-manifest.json"
+    routeManifestFile: "sdkwork-routes-llm-open-api.route-manifest.json"
   },
   {
     surface: "app-api",
     openapiPath: "sdks/sdkwork-llm-app-sdk/openapi/llm-app-api.openapi.json",
     apisPath: "apis/app-api/llm-app-api.openapi.json",
-    packageName: "sdkwork-router-llm-app-api",
-    crateDir: "crates/sdkwork-router-llm-app-api",
-    crateImport: "sdkwork_router_llm_app_api",
+    packageName: "sdkwork-routes-llm-app-api",
+    crateDir: "crates/sdkwork-routes-llm-app-api",
+    crateImport: "sdkwork_routes_llm_app_api",
     manifestFn: "app_route_manifest",
     apiAuthority: "sdkwork-llm.app",
     sdkFamily: "sdkwork-llm-app-sdk",
     prefix: "/app/v3/api",
     routeManifestDir: "sdks/_route-manifests/app-api",
-    routeManifestFile: "sdkwork-router-llm-app-api.route-manifest.json"
+    routeManifestFile: "sdkwork-routes-llm-app-api.route-manifest.json"
   },
   {
     surface: "backend-api",
     openapiPath: "sdks/sdkwork-llm-backend-sdk/openapi/llm-backend-api.openapi.json",
     apisPath: "apis/backend-api/llm-backend-api.openapi.json",
-    packageName: "sdkwork-router-llm-backend-api",
-    crateDir: "crates/sdkwork-router-llm-backend-api",
-    crateImport: "sdkwork_router_llm_backend_api",
+    packageName: "sdkwork-routes-llm-backend-api",
+    crateDir: "crates/sdkwork-routes-llm-backend-api",
+    crateImport: "sdkwork_routes_llm_backend_api",
     manifestFn: "backend_route_manifest",
     apiAuthority: "sdkwork-llm.backend",
     sdkFamily: "sdkwork-llm-backend-sdk",
     prefix: "/backend/v3/api",
     routeManifestDir: "sdks/_route-manifests/backend-api",
-    routeManifestFile: "sdkwork-router-llm-backend-api.route-manifest.json"
+    routeManifestFile: "sdkwork-routes-llm-backend-api.route-manifest.json"
   }
 ];
 
@@ -3076,9 +3076,9 @@ $requiredFiles = @(
     "apis/open-api/llm-open-api.openapi.json",
     "apis/app-api/llm-app-api.openapi.json",
     "apis/backend-api/llm-backend-api.openapi.json",
-    "sdks/_route-manifests/open-api/sdkwork-router-llm-open-api.route-manifest.json",
-    "sdks/_route-manifests/app-api/sdkwork-router-llm-app-api.route-manifest.json",
-    "sdks/_route-manifests/backend-api/sdkwork-router-llm-backend-api.route-manifest.json",
+    "sdks/_route-manifests/open-api/sdkwork-routes-llm-open-api.route-manifest.json",
+    "sdks/_route-manifests/app-api/sdkwork-routes-llm-app-api.route-manifest.json",
+    "sdks/_route-manifests/backend-api/sdkwork-routes-llm-backend-api.route-manifest.json",
     "package.json",
     "sdkwork.workflow.json",
     ".github/workflows/package.yml"
@@ -3387,9 +3387,9 @@ $backendOpenApiCheck = @{
 Verify-OpenApi @backendOpenApiCheck
 
 foreach ($routeManifestPath in @(
-    "sdks/_route-manifests/open-api/sdkwork-router-llm-open-api.route-manifest.json",
-    "sdks/_route-manifests/app-api/sdkwork-router-llm-app-api.route-manifest.json",
-    "sdks/_route-manifests/backend-api/sdkwork-router-llm-backend-api.route-manifest.json"
+    "sdks/_route-manifests/open-api/sdkwork-routes-llm-open-api.route-manifest.json",
+    "sdks/_route-manifests/app-api/sdkwork-routes-llm-app-api.route-manifest.json",
+    "sdks/_route-manifests/backend-api/sdkwork-routes-llm-backend-api.route-manifest.json"
 )) {
     $routeManifest = Read-JsonFile $routeManifestPath
     if ($routeManifest.kind -ne "sdkwork.route.manifest") {

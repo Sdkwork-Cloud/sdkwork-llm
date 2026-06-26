@@ -1,9 +1,0 @@
-pub const PACKAGE_NAME: &str = "sdkwork-router-llm-backend-api";
-pub const SURFACE: &str = "backend-api";
-pub const OWNER: &str = "sdkwork-llm";
-pub const DOMAIN: &str = "intelligence";
-pub const CAPABILITY: &str = "memory";
-pub const API_AUTHORITY: &str = "sdkwork-llm.backend";
-pub const SDK_FAMILY: &str = "sdkwork-llm-backend-sdk";
-pub const PREFIX: &str = "/backend/v3/api";
-pub const AUTH_MODE: &str = "dual-token";

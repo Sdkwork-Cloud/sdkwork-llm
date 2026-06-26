@@ -147,7 +147,7 @@
           {
             "id": "application.public-ingress",
             "crate": "sdkwork-llm-api-server",
-            "binary": "sdkwork-llm-api-server",
+            "binary": "sdkwork-llm-standalone-gateway",
             "required": true
           }
         ],
@@ -160,7 +160,7 @@
           {
             "id": "application.public-ingress",
             "crate": "sdkwork-llm-api-server",
-            "binary": "sdkwork-llm-api-server",
+            "binary": "sdkwork-llm-standalone-gateway",
             "required": true
           }
         ],
@@ -180,7 +180,7 @@
           {
             "id": "application.public-ingress",
             "crate": "sdkwork-llm-api-server",
-            "binary": "sdkwork-llm-api-server",
+            "binary": "sdkwork-llm-standalone-gateway",
             "required": true
           }
         ],
@@ -201,7 +201,7 @@
           {
             "id": "application.public-ingress",
             "crate": "sdkwork-llm-api-server",
-            "binary": "sdkwork-llm-api-server",
+            "binary": "sdkwork-llm-standalone-gateway",
             "required": true
           }
         ],

@@ -1,9 +1,9 @@
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
-use sdkwork_iam_web_adapter::IamDatabaseWebRequestContextResolver;
+use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
 use sdkwork_intelligence_llm_service::OpenLlmService;
 use sdkwork_llm_plugin_native_sql::NativeSqlLlmStore;
-use sdkwork_router_llm_backend_api::{
+use sdkwork_routes_llm_backend_api::{
     build_router_with_backend_api, wrap_router_with_iam_database_web_framework,
 };
 use serde_json::json;
@@ -39,7 +39,7 @@ fn authed_json(method: &str, uri: &str, body: serde_json::Value) -> Request<Body
 async fn backend_api_indexes_and_retrieval_profiles_return_phase1_defaults() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
     let app = wrap_router_with_iam_database_web_framework(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_backend_api(OpenLlmService::new(store)),
     );
 
@@ -67,7 +67,7 @@ async fn backend_api_indexes_and_retrieval_profiles_return_phase1_defaults() {
 async fn backend_api_migration_job_round_trip_via_dual_token() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
     let app = wrap_router_with_iam_database_web_framework(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_backend_api(OpenLlmService::new(store)),
     );
 
@@ -104,7 +104,7 @@ async fn backend_api_migration_job_round_trip_via_dual_token() {
 async fn backend_api_admin_config_persists_in_sql_tables() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
     let app = wrap_router_with_iam_database_web_framework(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_backend_api(OpenLlmService::new(store.clone())),
     );
 

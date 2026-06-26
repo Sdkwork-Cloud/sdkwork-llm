@@ -1,16 +1,16 @@
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
-use sdkwork_iam_web_adapter::IamDatabaseWebRequestContextResolver;
+use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
 use sdkwork_intelligence_llm_service::OpenLlmService;
 use sdkwork_llm_plugin_native_sql::NativeSqlLlmStore;
-use sdkwork_router_llm_app_api::{
+use sdkwork_routes_llm_app_api::{
     build_router_with_app_api, wrap_router_with_iam_database_web_framework,
 };
-use sdkwork_router_llm_backend_api::{
+use sdkwork_routes_llm_backend_api::{
     build_router_with_shared_backend_api,
     wrap_router_with_iam_database_web_framework as wrap_backend_router,
 };
-use sdkwork_router_llm_open_api::build_router_with_shared_open_api;
+use sdkwork_routes_llm_open_api::build_router_with_shared_open_api;
 use serde_json::json;
 use std::sync::Arc;
 use tower::util::ServiceExt;
@@ -45,7 +45,7 @@ fn authed_get(uri: &str) -> Request<Body> {
 async fn app_api_forget_and_export_jobs_round_trip_via_dual_token() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
     let app = wrap_router_with_iam_database_web_framework(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_app_api(OpenLlmService::new(store)),
     );
 
@@ -132,7 +132,7 @@ async fn backend_api_lists_audit_logs_after_open_api_feedback() {
     let service = Arc::new(OpenLlmService::new(store));
     let open_app = build_router_with_shared_open_api(service.clone());
     let backend_app = wrap_backend_router(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_shared_backend_api(service),
     );
 

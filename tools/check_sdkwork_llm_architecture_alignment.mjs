@@ -96,7 +96,7 @@ assert(cargoToml.includes('sdkwork-database-repository'), 'Cargo.toml must decla
 assert(cargoToml.includes('sdkwork-utils-rust'), 'Cargo.toml must declare sdkwork-utils-rust');
 assert(cargoToml.includes('sdkwork-id-core'), 'Cargo.toml must declare sdkwork-id-core');
 assert(cargoToml.includes('sdkwork-llm-api-server'), 'Cargo.toml must include sdkwork-llm-api-server');
-assert(cargoToml.includes('sdkwork-router-llm-common'), 'Cargo.toml must include sdkwork-router-llm-common');
+assert(cargoToml.includes('sdkwork-routes-llm-common'), 'Cargo.toml must include sdkwork-routes-llm-common');
 assert(!cargoToml.includes('sdkwork-discovery'), 'sdkwork-discovery is not required until RPC services exist');
 
 const runtimeEnvSource = readText('crates/sdkwork-llm-contract/src/runtime_env.rs');
@@ -109,7 +109,7 @@ assert(
   'runtime_env must honor SDKWORK_LLM_DEV_AUTH_BYPASS',
 );
 
-const openWebBootstrap = readText('crates/sdkwork-router-llm-open-api/src/web_bootstrap.rs');
+const openWebBootstrap = readText('crates/sdkwork-routes-llm-open-api/src/web_bootstrap.rs');
 assert(
   openWebBootstrap.includes('llm_web_auth_mode_from_env'),
   'open-api web bootstrap must use shared llm web auth mode',
@@ -119,10 +119,10 @@ assert(
   'open-api web bootstrap must not gate auth on DATABASE_URL presence',
 );
 
-const memoryWebAuth = readText('crates/sdkwork-router-llm-common/src/lib.rs');
+const memoryWebAuth = readText('crates/sdkwork-routes-llm-common/src/lib.rs');
 assert(
   memoryWebAuth.includes('ProductionFailClosedResolver'),
-  'router-llm-common must provide production fail-closed auth resolver',
+  'routes-llm-common must provide production fail-closed auth resolver',
 );
 
 const k8sDeployment = readText('deployments/kubernetes/deployment.yaml');
@@ -159,9 +159,9 @@ for (const dependencyId of [
 assert(!dependencyIds.has('sdkwork-discovery'), 'sdkwork.workflow.json must not declare sdkwork-discovery until RPC exists');
 
 const routerCrates = [
-  'crates/sdkwork-router-llm-open-api/Cargo.toml',
-  'crates/sdkwork-router-llm-app-api/Cargo.toml',
-  'crates/sdkwork-router-llm-backend-api/Cargo.toml',
+  'crates/sdkwork-routes-llm-open-api/Cargo.toml',
+  'crates/sdkwork-routes-llm-app-api/Cargo.toml',
+  'crates/sdkwork-routes-llm-backend-api/Cargo.toml',
 ];
 
 for (const routerCrate of routerCrates) {
@@ -186,15 +186,15 @@ for (const routerCrate of routerCrates) {
 }
 
 for (const routeTest of [
-  'crates/sdkwork-router-llm-open-api/tests/open_api_routes.rs',
-  'crates/sdkwork-router-llm-open-api/tests/open_web_framework_routes.rs',
-  'crates/sdkwork-router-llm-open-api/tests/open_openapi_routes.rs',
-  'crates/sdkwork-router-llm-app-api/tests/app_api_routes.rs',
-  'crates/sdkwork-router-llm-app-api/tests/app_web_framework_routes.rs',
-  'crates/sdkwork-router-llm-app-api/tests/app_openapi_routes.rs',
-  'crates/sdkwork-router-llm-backend-api/tests/backend_api_routes.rs',
-  'crates/sdkwork-router-llm-backend-api/tests/backend_web_framework_routes.rs',
-  'crates/sdkwork-router-llm-backend-api/tests/backend_openapi_routes.rs',
+  'crates/sdkwork-routes-llm-open-api/tests/open_api_routes.rs',
+  'crates/sdkwork-routes-llm-open-api/tests/open_web_framework_routes.rs',
+  'crates/sdkwork-routes-llm-open-api/tests/open_openapi_routes.rs',
+  'crates/sdkwork-routes-llm-app-api/tests/app_api_routes.rs',
+  'crates/sdkwork-routes-llm-app-api/tests/app_web_framework_routes.rs',
+  'crates/sdkwork-routes-llm-app-api/tests/app_openapi_routes.rs',
+  'crates/sdkwork-routes-llm-backend-api/tests/backend_api_routes.rs',
+  'crates/sdkwork-routes-llm-backend-api/tests/backend_web_framework_routes.rs',
+  'crates/sdkwork-routes-llm-backend-api/tests/backend_openapi_routes.rs',
 ]) {
   assert(fs.existsSync(path.join(repoRoot, routeTest)), `${routeTest} must exist`);
 }
@@ -343,9 +343,9 @@ for (const familyRoot of sdkFamilyRoots) {
 }
 
 const routeManifestPaths = [
-  'sdks/_route-manifests/open-api/sdkwork-router-llm-open-api.route-manifest.json',
-  'sdks/_route-manifests/app-api/sdkwork-router-llm-app-api.route-manifest.json',
-  'sdks/_route-manifests/backend-api/sdkwork-router-llm-backend-api.route-manifest.json',
+  'sdks/_route-manifests/open-api/sdkwork-routes-llm-open-api.route-manifest.json',
+  'sdks/_route-manifests/app-api/sdkwork-routes-llm-app-api.route-manifest.json',
+  'sdks/_route-manifests/backend-api/sdkwork-routes-llm-backend-api.route-manifest.json',
 ];
 
 for (const relativePath of routeManifestPaths) {
@@ -460,7 +460,7 @@ for (const sdkRoot of requiredGeneratedSdkRoots) {
 }
 
 assert(
-  !readText('crates/sdkwork-router-llm-app-api/src/http_route_manifest.rs').includes('"memory"'),
+  !readText('crates/sdkwork-routes-llm-app-api/src/http_route_manifest.rs').includes('"memory"'),
   'app-api http route manifest must use llm module tag instead of memory',
 );
 

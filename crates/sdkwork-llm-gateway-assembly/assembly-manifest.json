@@ -1,0 +1,40 @@
+{
+  "kind": "sdkwork.gateway.assembly",
+  "schemaVersion": 1,
+  "applicationCode": "llm",
+  "packageName": "sdkwork-llm-gateway-assembly",
+  "crateDir": "crates/sdkwork-llm-gateway-assembly",
+  "generatedAt": "2026-06-25T13:08:05.561Z",
+  "routeCrates": [
+    {
+      "packageName": "sdkwork-routes-llm-app-api",
+      "memberDir": "crates/sdkwork-routes-llm-app-api",
+      "libName": "sdkwork_routes_llm_app_api",
+      "surface": "app-api",
+      "pathPrefix": null,
+      "mountOrder": 0,
+      "hasGatewayMount": true,
+      "hasGatewayRouteManifest": true
+    },
+    {
+      "packageName": "sdkwork-routes-llm-backend-api",
+      "memberDir": "crates/sdkwork-routes-llm-backend-api",
+      "libName": "sdkwork_routes_llm_backend_api",
+      "surface": "backend-api",
+      "pathPrefix": null,
+      "mountOrder": 1,
+      "hasGatewayMount": true,
+      "hasGatewayRouteManifest": true
+    },
+    {
+      "packageName": "sdkwork-routes-llm-open-api",
+      "memberDir": "crates/sdkwork-routes-llm-open-api",
+      "libName": "sdkwork_routes_llm_open_api",
+      "surface": "open-api",
+      "pathPrefix": null,
+      "mountOrder": 2,
+      "hasGatewayMount": true,
+      "hasGatewayRouteManifest": true
+    }
+  ]
+}

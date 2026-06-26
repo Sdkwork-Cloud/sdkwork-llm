@@ -1,0 +1,9 @@
+pub const PACKAGE_NAME: &str = "sdkwork-routes-llm-open-api";
+pub const SURFACE: &str = "open-api";
+pub const OWNER: &str = "sdkwork-llm";
+pub const DOMAIN: &str = "intelligence";
+pub const CAPABILITY: &str = "memory";
+pub const API_AUTHORITY: &str = "sdkwork-llm-open-api";
+pub const SDK_FAMILY: &str = "sdkwork-llm-sdk";
+pub const PREFIX: &str = "/llm/v3/api";
+pub const AUTH_MODE: &str = "api-key";

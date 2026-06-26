@@ -8,12 +8,18 @@ name = "sdkwork-llm-api-server"
 path = "src/main.rs"
 
 [dependencies]
+sdkwork_llm_gateway_assembly = { package = "sdkwork-llm-gateway-assembly", path = "../sdkwork-llm-gateway-assembly" }
 axum.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
-sdkwork-router-llm-open-api.workspace = true
-sdkwork-router-llm-app-api.workspace = true
-sdkwork-router-llm-backend-api.workspace = true
+sdkwork-routes-llm-open-api.workspace = true
+sdkwork-routes-llm-app-api.workspace = true
+sdkwork-routes-llm-backend-api.workspace = true
 sdkwork-intelligence-llm-repository-sqlx.workspace = true
 sdkwork-intelligence-llm-service.workspace = true
+sdkwork-web-bootstrap.workspace = true
+
+[[bin]]
+name = "sdkwork-llm-standalone-gateway"
+path = "src/main.rs"

@@ -163,7 +163,7 @@ const replacements = [
   ["habit memory", "habit LLM memory"],
   ["embedding-optional AI memory", "embedding-optional intelligence LLM memory"],
   ["shared memory web auth", "shared llm web auth"],
-  ["router-memory-common", "router-llm-common"],
+  ["routes-memory-common", "routes-llm-common"],
   ["001-memory-core", "001-llm-core"],
   ["002-memory-learning", "002-llm-learning"],
   ["003-memory-retrieval", "003-llm-retrieval"],

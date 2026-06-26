@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "sdkwork.route.manifest",
-  "packageName": "sdkwork-router-llm-open-api",
+  "packageName": "sdkwork-routes-llm-open-api",
   "surface": "open-api",
   "owner": "sdkwork-llm",
   "domain": "intelligence",
@@ -10,8 +10,8 @@
   "sdkFamily": "sdkwork-llm-sdk",
   "prefix": "/llm/v3/api",
   "source": {
-    "crateRoot": "crates/sdkwork-router-llm-open-api",
-    "crateImport": "sdkwork_router_llm_open_api",
+    "crateRoot": "crates/sdkwork-routes-llm-open-api",
+    "crateImport": "sdkwork_routes_llm_open_api",
     "openApiAuthority": "sdks/sdkwork-llm-sdk/openapi/llm-open-api.openapi.json"
   },
   "routes": [

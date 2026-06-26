@@ -1,8 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/sdkwork-llm-gateway-assembly",
   "crates/sdkwork-llm-database-host",
-  "crates/sdkwork-router-llm-common",
+  "crates/sdkwork-routes-llm-common",
   "crates/sdkwork-llm-spi",
   "crates/sdkwork-llm-runtime",
   "crates/sdkwork-llm-contract",
@@ -10,9 +11,9 @@ members = [
   "crates/sdkwork-llm-test-support",
   "crates/sdkwork-intelligence-llm-service",
   "crates/sdkwork-intelligence-llm-repository-sqlx",
-  "crates/sdkwork-router-llm-open-api",
-  "crates/sdkwork-router-llm-app-api",
-  "crates/sdkwork-router-llm-backend-api",
+  "crates/sdkwork-routes-llm-open-api",
+  "crates/sdkwork-routes-llm-app-api",
+  "crates/sdkwork-routes-llm-backend-api",
   "crates/sdkwork-llm-integration-tests",
   "crates/sdkwork-llm-api-server",
   "plugins/sdkwork-llm-plugin-native-sql",
@@ -46,16 +47,17 @@ sdkwork-llm-test-support = { path = "crates/sdkwork-llm-test-support" }
 sdkwork-llm-plugin-native-sql = { path = "plugins/sdkwork-llm-plugin-native-sql" }
 sdkwork-intelligence-llm-service = { path = "crates/sdkwork-intelligence-llm-service" }
 sdkwork-intelligence-llm-repository-sqlx = { path = "crates/sdkwork-intelligence-llm-repository-sqlx" }
-sdkwork-router-llm-open-api = { path = "crates/sdkwork-router-llm-open-api" }
-sdkwork-router-llm-common = { path = "crates/sdkwork-router-llm-common" }
-sdkwork-router-llm-app-api = { path = "crates/sdkwork-router-llm-app-api" }
-sdkwork-router-llm-backend-api = { path = "crates/sdkwork-router-llm-backend-api" }
+sdkwork-routes-llm-open-api = { path = "crates/sdkwork-routes-llm-open-api" }
+sdkwork-routes-llm-common = { path = "crates/sdkwork-routes-llm-common" }
+sdkwork-routes-llm-app-api = { path = "crates/sdkwork-routes-llm-app-api" }
+sdkwork-routes-llm-backend-api = { path = "crates/sdkwork-routes-llm-backend-api" }
 sdkwork-llm-api-server = { path = "crates/sdkwork-llm-api-server" }
 
 sdkwork-iam-web-adapter = { path = "../sdkwork-iam/crates/sdkwork-iam-web-adapter" }
-sdkwork-router-iam-app-api = { path = "../sdkwork-iam/crates/sdkwork-router-iam-app-api" }
+sdkwork-routes-iam-app-api = { path = "../sdkwork-iam/crates/sdkwork-routes-iam-app-api" }
 sdkwork-web-core = { path = "../sdkwork-web-framework/crates/sdkwork-web-core" }
 sdkwork-web-axum = { path = "../sdkwork-web-framework/crates/sdkwork-web-axum" }
+sdkwork-web-bootstrap = { path = "../sdkwork-web-framework/crates/sdkwork-web-bootstrap" }
 sdkwork-database-config = { path = "../sdkwork-database/crates/sdkwork-database-config", package = "sdkwork-database-config" }
 sdkwork-database-lifecycle = { path = "../sdkwork-database/crates/sdkwork-database-lifecycle", package = "sdkwork-database-lifecycle" }
 sdkwork-database-spi = { path = "../sdkwork-database/crates/sdkwork-database-spi", package = "sdkwork-database-spi" }

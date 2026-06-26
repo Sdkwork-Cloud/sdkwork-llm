@@ -1,12 +1,12 @@
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
-use sdkwork_iam_web_adapter::IamDatabaseWebRequestContextResolver;
+use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
 use sdkwork_intelligence_llm_service::OpenLlmService;
 use sdkwork_llm_plugin_native_sql::NativeSqlLlmStore;
-use sdkwork_router_llm_app_api::{
+use sdkwork_routes_llm_app_api::{
     build_router_with_app_api, wrap_router_with_iam_database_web_framework,
 };
-use sdkwork_router_llm_backend_api::{
+use sdkwork_routes_llm_backend_api::{
     build_router_with_backend_api,
     wrap_router_with_iam_database_web_framework as wrap_backend_router,
 };
@@ -21,7 +21,7 @@ const DEV_ACCESS_TOKEN: &str =
 async fn app_api_rejects_unauthenticated_requests() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
     let app = wrap_router_with_iam_database_web_framework(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_app_api(OpenLlmService::new(store)),
     );
 
@@ -43,7 +43,7 @@ async fn app_api_rejects_unauthenticated_requests() {
 async fn app_api_rejects_auth_token_without_access_token() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
     let app = wrap_router_with_iam_database_web_framework(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_app_api(OpenLlmService::new(store)),
     );
 
@@ -66,7 +66,7 @@ async fn app_api_rejects_auth_token_without_access_token() {
 async fn app_api_accepts_dual_token_context() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
     let app = wrap_router_with_iam_database_web_framework(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_app_api(OpenLlmService::new(store)),
     );
 
@@ -90,7 +90,7 @@ async fn app_api_accepts_dual_token_context() {
 async fn backend_api_rejects_unauthenticated_requests() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
     let app = wrap_backend_router(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_backend_api(OpenLlmService::new(store)),
     );
 
@@ -112,7 +112,7 @@ async fn backend_api_rejects_unauthenticated_requests() {
 async fn backend_api_accepts_dual_token_context() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
     let app = wrap_backend_router(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_backend_api(OpenLlmService::new(store)),
     );
 

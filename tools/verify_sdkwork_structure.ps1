@@ -66,9 +66,9 @@ $expectedPackages = @(
     "sdkwork-intelligence-llm-service",
     "sdkwork-intelligence-llm-repository-sqlx",
     "sdkwork-llm-api-server",
-    "sdkwork-router-llm-open-api",
-    "sdkwork-router-llm-app-api",
-    "sdkwork-router-llm-backend-api"
+    "sdkwork-routes-llm-open-api",
+    "sdkwork-routes-llm-app-api",
+    "sdkwork-routes-llm-backend-api"
 )
 
 $cargoTomls = Get-ChildItem -Path . -Recurse -Filter Cargo.toml -File |
@@ -95,9 +95,9 @@ foreach ($expectedPackage in $expectedPackages) {
 }
 
 foreach ($routerCrate in @(
-    "sdkwork-router-llm-open-api",
-    "sdkwork-router-llm-app-api",
-    "sdkwork-router-llm-backend-api"
+    "sdkwork-routes-llm-open-api",
+    "sdkwork-routes-llm-app-api",
+    "sdkwork-routes-llm-backend-api"
 )) {
     Assert-PathExists "crates/$routerCrate/README.md" "Router crate README"
     Assert-PathExists "crates/$routerCrate/specs/component.spec.json" "Router crate component spec"

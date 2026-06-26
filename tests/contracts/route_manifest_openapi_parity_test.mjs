@@ -26,18 +26,18 @@ function countOpenApiOperations(openapiPath) {
 const surfaces = [
   {
     openapiPath: 'sdks/sdkwork-llm-sdk/openapi/llm-open-api.openapi.json',
-    routeManifestPath: 'sdks/_route-manifests/open-api/sdkwork-router-llm-open-api.route-manifest.json',
-    httpRouteManifestPath: 'crates/sdkwork-router-llm-open-api/src/http_route_manifest.rs',
+    routeManifestPath: 'sdks/_route-manifests/open-api/sdkwork-routes-llm-open-api.route-manifest.json',
+    httpRouteManifestPath: 'crates/sdkwork-routes-llm-open-api/src/http_route_manifest.rs',
   },
   {
     openapiPath: 'sdks/sdkwork-llm-app-sdk/openapi/llm-app-api.openapi.json',
-    routeManifestPath: 'sdks/_route-manifests/app-api/sdkwork-router-llm-app-api.route-manifest.json',
-    httpRouteManifestPath: 'crates/sdkwork-router-llm-app-api/src/http_route_manifest.rs',
+    routeManifestPath: 'sdks/_route-manifests/app-api/sdkwork-routes-llm-app-api.route-manifest.json',
+    httpRouteManifestPath: 'crates/sdkwork-routes-llm-app-api/src/http_route_manifest.rs',
   },
   {
     openapiPath: 'sdks/sdkwork-llm-backend-sdk/openapi/llm-backend-api.openapi.json',
-    routeManifestPath: 'sdks/_route-manifests/backend-api/sdkwork-router-llm-backend-api.route-manifest.json',
-    httpRouteManifestPath: 'crates/sdkwork-router-llm-backend-api/src/http_route_manifest.rs',
+    routeManifestPath: 'sdks/_route-manifests/backend-api/sdkwork-routes-llm-backend-api.route-manifest.json',
+    httpRouteManifestPath: 'crates/sdkwork-routes-llm-backend-api/src/http_route_manifest.rs',
   },
 ];
 

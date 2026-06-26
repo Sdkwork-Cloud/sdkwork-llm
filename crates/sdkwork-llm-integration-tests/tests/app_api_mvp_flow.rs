@@ -1,10 +1,10 @@
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
-use sdkwork_iam_web_adapter::IamDatabaseWebRequestContextResolver;
+use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
 use sdkwork_intelligence_llm_service::OpenLlmService;
 use sdkwork_llm_plugin_native_sql::NativeSqlLlmStore;
 use sdkwork_llm_spi::{LlmHabitStorePort, LlmScopeContext, UpsertLlmHabitCommand};
-use sdkwork_router_llm_app_api::{
+use sdkwork_routes_llm_app_api::{
     build_router_with_app_api, wrap_router_with_iam_database_web_framework,
 };
 use serde_json::json;
@@ -40,7 +40,7 @@ fn authed_get_request(uri: &str) -> Request<Body> {
 async fn app_api_mvp_flow_space_memory_and_retrieval_via_dual_token() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
     let app = wrap_router_with_iam_database_web_framework(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_app_api(OpenLlmService::new(store)),
     );
 
@@ -128,7 +128,7 @@ async fn app_api_habit_confirm_flow_via_dual_token() {
     .expect("seed habit");
 
     let app = wrap_router_with_iam_database_web_framework(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_app_api(OpenLlmService::new(store)),
     );
 
@@ -151,7 +151,7 @@ async fn app_api_memory_sources_list_returns_linked_event_sources() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
     let pool = store.pool().clone();
     let app = wrap_router_with_iam_database_web_framework(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_app_api(OpenLlmService::new(store)),
     );
 
@@ -236,7 +236,7 @@ async fn app_api_candidate_approve_promotes_memory_and_links_event_sources() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
     let pool = store.pool().clone();
     let app = wrap_router_with_iam_database_web_framework(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_app_api(OpenLlmService::new(store)),
     );
 
