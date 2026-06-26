@@ -10,9 +10,9 @@ use serde_json::json;
 use tower::util::ServiceExt;
 
 const DEV_AUTH_TOKEN: &str =
-    "Bearer tenant_id=1001;user_id=9001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
+    "Bearer tenant_id=100_001;user_id=9001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
 const DEV_ACCESS_TOKEN: &str =
-    "tenant_id=1001;user_id=9001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
+    "tenant_id=100_001;user_id=9001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
 
 fn authed_get(uri: &str) -> Request<Body> {
     Request::builder()
@@ -115,7 +115,7 @@ async fn backend_api_admin_config_persists_in_sql_tables() {
         .unwrap();
     assert_eq!(indexes.status(), StatusCode::OK);
 
-    let index_rows = store.list_llm_indexes_for_tenant(1001, 20).await.unwrap();
+    let index_rows = store.list_llm_indexes_for_tenant(100_001, 20).await.unwrap();
     assert!(!index_rows.is_empty());
     assert_eq!(index_rows[0].index_kind, "keyword");
 
@@ -137,14 +137,14 @@ async fn backend_api_admin_config_persists_in_sql_tables() {
     let eval_run_id = create_json["evalRunId"].as_str().unwrap();
 
     let eval_row = store
-        .retrieve_llm_eval_run_for_tenant(1001, eval_run_id)
+        .retrieve_llm_eval_run_for_tenant(100_001, eval_run_id)
         .await
         .unwrap()
         .expect("eval run should exist in llm_eval_run");
     assert_eq!(eval_row.eval_type, "retrieval");
 
     let audit_config = store
-        .retrieve_admin_config_entity(1001, "eval_run", eval_run_id)
+        .retrieve_admin_config_entity(100_001, "eval_run", eval_run_id)
         .await
         .unwrap();
     assert!(

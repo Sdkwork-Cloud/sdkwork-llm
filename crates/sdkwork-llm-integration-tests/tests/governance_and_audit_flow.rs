@@ -16,9 +16,9 @@ use std::sync::Arc;
 use tower::util::ServiceExt;
 
 const DEV_AUTH_TOKEN: &str =
-    "Bearer tenant_id=1001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
+    "Bearer tenant_id=100_001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
 const DEV_ACCESS_TOKEN: &str =
-    "tenant_id=1001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
+    "tenant_id=100_001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
 
 fn authed_json_request(method: &str, uri: &str, body: serde_json::Value) -> Request<Body> {
     Request::builder()
@@ -144,7 +144,7 @@ async fn backend_api_lists_audit_logs_after_open_api_feedback() {
                 .header("content-type", "application/json")
                 .extension(sdkwork_llm_contract::LlmOpenApiRequestContext {
                     api_key_id: "key-1".to_string(),
-                    tenant_id: 1001,
+                    tenant_id: 100_001,
                     actor_id: Some(2001),
                 })
                 .body(Body::from(

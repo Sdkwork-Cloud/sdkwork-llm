@@ -9,7 +9,7 @@ use tower::util::ServiceExt;
 fn open_context() -> LlmOpenApiRequestContext {
     LlmOpenApiRequestContext {
         api_key_id: "api-key-001".to_string(),
-        tenant_id: 1001,
+        tenant_id: 100_001,
         actor_id: Some(2001),
     }
 }

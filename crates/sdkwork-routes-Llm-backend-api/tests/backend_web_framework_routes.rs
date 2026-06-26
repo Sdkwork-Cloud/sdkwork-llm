@@ -13,9 +13,9 @@ use std::sync::{Arc, Mutex};
 use tower::util::ServiceExt;
 
 const DEV_AUTH_TOKEN: &str =
-    "Bearer tenant_id=1001;user_id=9001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
+    "Bearer tenant_id=100_001;user_id=9001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
 const DEV_ACCESS_TOKEN: &str =
-    "tenant_id=1001;user_id=9001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
+    "tenant_id=100_001;user_id=9001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
 
 #[tokio::test]
 async fn backend_router_web_framework_rejects_unauthenticated_requests() {
@@ -58,7 +58,7 @@ async fn backend_router_web_framework_accepts_dev_inline_dual_tokens_before_hand
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    assert_eq!(service.tenant_ids(), vec![1001]);
+    assert_eq!(service.tenant_ids(), vec![100_001]);
 }
 
 #[derive(Clone, Default)]

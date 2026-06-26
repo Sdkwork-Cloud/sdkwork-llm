@@ -7,10 +7,10 @@ use sdkwork_web_core::DefaultWebRequestContextResolver;
 use tower::util::ServiceExt;
 
 const DEV_AUTH_TOKEN: &str =
-    "Bearer tenant_id=1001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
+    "Bearer tenant_id=100_001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
 const DEV_ACCESS_TOKEN: &str =
-    "tenant_id=1001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
-const DEV_API_KEY: &str = "api_key_id=key-1;tenant_id=1001;user_id=2001;app_id=sdkwork-llm";
+    "tenant_id=100_001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
+const DEV_API_KEY: &str = "api_key_id=key-1;tenant_id=100_001;user_id=2001;app_id=sdkwork-llm";
 
 async fn wrapped_open_api_router() -> axum::Router {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();

@@ -13,9 +13,9 @@ use sdkwork_routes_llm_backend_api::{
 use tower::util::ServiceExt;
 
 const DEV_AUTH_TOKEN: &str =
-    "Bearer tenant_id=1001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
+    "Bearer tenant_id=100_001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
 const DEV_ACCESS_TOKEN: &str =
-    "tenant_id=1001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
+    "tenant_id=100_001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
 
 #[tokio::test]
 async fn app_api_rejects_unauthenticated_requests() {

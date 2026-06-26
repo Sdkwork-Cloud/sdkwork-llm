@@ -3,7 +3,7 @@ use axum::http::{Request, StatusCode};
 use sdkwork_llm_contract::runtime_env::env_test_lock;
 use tower::util::ServiceExt;
 
-const DEV_API_KEY: &str = "api_key_id=dev-key;tenant_id=1001;user_id=2001;app_id=sdkwork-llm";
+const DEV_API_KEY: &str = "api_key_id=dev-key;tenant_id=100_001;user_id=2001;app_id=sdkwork-llm";
 
 #[tokio::test]
 async fn api_server_bootstrap_auth_and_healthz_contracts() {

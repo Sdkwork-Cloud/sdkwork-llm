@@ -11,9 +11,9 @@ use serde_json::json;
 use tower::util::ServiceExt;
 
 const DEV_AUTH_TOKEN: &str =
-    "Bearer tenant_id=1001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
+    "Bearer tenant_id=100_001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
 const DEV_ACCESS_TOKEN: &str =
-    "tenant_id=1001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
+    "tenant_id=100_001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
 
 fn authed_json_request(method: &str, uri: &str, body: serde_json::Value) -> Request<Body> {
     Request::builder()
@@ -107,7 +107,7 @@ async fn app_api_mvp_flow_space_memory_and_retrieval_via_dual_token() {
 #[tokio::test]
 async fn app_api_habit_confirm_flow_via_dual_token() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1001, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
     LlmHabitStorePort::upsert(
         &store,
         UpsertLlmHabitCommand {
@@ -198,7 +198,7 @@ async fn app_api_memory_sources_list_returns_linked_event_sources() {
     let record_id = memory_json["recordId"].as_str().unwrap();
 
     let seed_store = NativeSqlLlmStore::from_sqlite_pool(pool).await.unwrap();
-    let scope = LlmScopeContext::for_test(1001, space_id.parse().unwrap());
+    let scope = LlmScopeContext::for_test(100_001, space_id.parse().unwrap());
     seed_store
         .append_open_api_event(
             &scope,
@@ -211,7 +211,7 @@ async fn app_api_memory_sources_list_returns_linked_event_sources() {
         .await
         .expect("seed event");
     seed_store
-        .append_record_source_for_tenant(1001, "8101", record_id, "8001", "evidence", Some(0.2))
+        .append_record_source_for_tenant(100_001, "8101", record_id, "8001", "evidence", Some(0.2))
         .await
         .expect("seed record source");
 
@@ -262,7 +262,7 @@ async fn app_api_candidate_approve_promotes_memory_and_links_event_sources() {
     let space_id = space_json["spaceId"].as_str().unwrap();
 
     let seed_store = NativeSqlLlmStore::from_sqlite_pool(pool).await.unwrap();
-    let scope = LlmScopeContext::for_test(1001, space_id.parse().unwrap());
+    let scope = LlmScopeContext::for_test(100_001, space_id.parse().unwrap());
     seed_store
         .append_open_api_event(
             &scope,
