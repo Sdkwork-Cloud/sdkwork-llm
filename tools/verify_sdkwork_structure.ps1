@@ -65,7 +65,7 @@ $expectedPackages = @(
     "sdkwork-llm-database-host",
     "sdkwork-intelligence-llm-service",
     "sdkwork-intelligence-llm-repository-sqlx",
-    "sdkwork-llm-api-server",
+    "sdkwork-llm-standalone-gateway",
     "sdkwork-routes-llm-open-api",
     "sdkwork-routes-llm-app-api",
     "sdkwork-routes-llm-backend-api"
@@ -115,7 +115,7 @@ foreach ($crateComponentSpec in @(
     "crates/sdkwork-intelligence-llm-service/specs/component.spec.json",
     "crates/sdkwork-intelligence-llm-repository-sqlx/specs/component.spec.json",
     "crates/sdkwork-llm-database-host/specs/component.spec.json",
-    "crates/sdkwork-llm-api-server/specs/component.spec.json"
+    "crates/sdkwork-llm-standalone-gateway/specs/component.spec.json"
 )) {
     Assert-PathExists $crateComponentSpec "Core crate component spec"
 }

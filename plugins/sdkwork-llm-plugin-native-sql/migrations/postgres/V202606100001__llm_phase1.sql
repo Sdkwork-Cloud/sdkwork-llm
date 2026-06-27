@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS llm_space (
   id BIGINT PRIMARY KEY,
   uuid VARCHAR(64) NOT NULL,
   tenant_id BIGINT NOT NULL,
-  organization_id BIGINT,
+  organization_id BIGINT NOT NULL DEFAULT 0,
   owner_subject_type VARCHAR(32) NOT NULL,
   owner_subject_id VARCHAR(128) NOT NULL,
   space_type VARCHAR(32) NOT NULL,

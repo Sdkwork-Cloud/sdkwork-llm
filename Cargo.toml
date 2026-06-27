@@ -15,7 +15,7 @@ members = [
   "crates/sdkwork-routes-llm-app-api",
   "crates/sdkwork-routes-llm-backend-api",
   "crates/sdkwork-llm-integration-tests",
-  "crates/sdkwork-llm-api-server",
+  "crates/sdkwork-llm-standalone-gateway",
   "plugins/sdkwork-llm-plugin-native-sql",
   "plugins/sdkwork-llm-plugin-reference-profiles",
 ]
@@ -51,7 +51,7 @@ sdkwork-routes-llm-open-api = { path = "crates/sdkwork-routes-llm-open-api" }
 sdkwork-routes-llm-common = { path = "crates/sdkwork-routes-llm-common" }
 sdkwork-routes-llm-app-api = { path = "crates/sdkwork-routes-llm-app-api" }
 sdkwork-routes-llm-backend-api = { path = "crates/sdkwork-routes-llm-backend-api" }
-sdkwork-llm-api-server = { path = "crates/sdkwork-llm-api-server" }
+sdkwork-llm-standalone-gateway = { path = "crates/sdkwork-llm-standalone-gateway" }
 
 sdkwork-iam-web-adapter = { path = "../sdkwork-iam/crates/sdkwork-iam-web-adapter" }
 sdkwork-routes-iam-app-api = { path = "../sdkwork-iam/crates/sdkwork-routes-iam-app-api" }
@@ -67,5 +67,5 @@ sdkwork_database_config = { path = "../sdkwork-database/crates/sdkwork-database-
 sdkwork_database_lifecycle = { path = "../sdkwork-database/crates/sdkwork-database-lifecycle", package = "sdkwork-database-lifecycle" }
 sdkwork_database_spi = { path = "../sdkwork-database/crates/sdkwork-database-spi", package = "sdkwork-database-spi" }
 sdkwork_database_sqlx = { path = "../sdkwork-database/crates/sdkwork-database-sqlx", package = "sdkwork-database-sqlx" }
-sdkwork-id-core = { path = "../sdkwork-id/crates/sdkwork-id-core" }
+sdkwork-database-id = { path = "../sdkwork-database/crates/sdkwork-database-id", package = "sdkwork-database-id" }
 sdkwork-utils-rust = { path = "../sdkwork-utils/packages/sdkwork-utils-rust" }

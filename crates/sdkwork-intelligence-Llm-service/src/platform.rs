@@ -1,6 +1,6 @@
 use std::sync::OnceLock;
 
-use sdkwork_id_core::SnowflakeIdGenerator;
+use sdkwork_database_id::SnowflakeIdGenerator;
 use sdkwork_llm_contract::{LlmServiceError, LlmServiceResult};
 
 static ID_GENERATOR: OnceLock<SnowflakeIdGenerator> = OnceLock::new();

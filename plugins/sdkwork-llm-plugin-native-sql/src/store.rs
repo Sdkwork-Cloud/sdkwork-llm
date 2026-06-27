@@ -1521,7 +1521,7 @@ impl NativeSqlLlmStore {
         let scope = LlmScopeContext {
             tenant_id,
             space_id: row.get("space_id"),
-            organization_id: None,
+            organization_id: Some(0),
             user_id: None,
         };
         self.retrieve_retrieval_trace(&scope, trace_id).await
@@ -2083,7 +2083,7 @@ impl NativeSqlLlmStore {
         .bind(space_id)
         .bind(format!("space-{space_id}"))
         .bind(tenant_id)
-        .bind(request.organization_id)
+        .bind(request.organization_id.unwrap_or(0))
         .bind(&request.owner_subject_type)
         .bind(&request.owner_subject_id)
         .bind(&request.space_type)
@@ -2609,6 +2609,7 @@ impl NativeSqlLlmStore {
               id,
               uuid,
               tenant_id,
+              organization_id,
               owner_subject_type,
               owner_subject_id,
               space_type,
@@ -2619,12 +2620,13 @@ impl NativeSqlLlmStore {
               updated_at,
               version
             )
-            VALUES (?, ?, ?, 'user', ?, 'personal', 'Default Memory Space', 'user', 'active', ?, ?, 0)
+            VALUES (?, ?, ?, ?, 'user', ?, 'personal', 'Default Memory Space', 'user', 'active', ?, ?, 0)
             "#,
         )
         .bind(scope.space_id)
         .bind(format!("space-{}", scope.space_id))
         .bind(scope.tenant_id)
+        .bind(scope.organization_id.unwrap_or(0))
         .bind(format!("tenant-{}-space-{}", scope.tenant_id, scope.space_id))
         .bind(now_text())
         .bind(now_text())

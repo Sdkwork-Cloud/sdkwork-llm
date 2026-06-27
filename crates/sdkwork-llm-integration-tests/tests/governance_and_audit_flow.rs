@@ -16,9 +16,9 @@ use std::sync::Arc;
 use tower::util::ServiceExt;
 
 const DEV_AUTH_TOKEN: &str =
-    "Bearer tenant_id=100_001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
+    "Bearer tenant_id=100_001;user_id=1;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
 const DEV_ACCESS_TOKEN: &str =
-    "tenant_id=100_001;user_id=2001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
+    "tenant_id=100_001;user_id=1;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
 
 fn authed_json_request(method: &str, uri: &str, body: serde_json::Value) -> Request<Body> {
     Request::builder()

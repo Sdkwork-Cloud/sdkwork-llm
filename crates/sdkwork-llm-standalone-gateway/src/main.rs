@@ -1,4 +1,4 @@
-use sdkwork_llm_api_server::build_router;
+use sdkwork_llm_standalone_gateway::build_router;
 
 #[tokio::main]
 async fn main() {
@@ -13,12 +13,12 @@ async fn main() {
         .unwrap_or_else(|_| "127.0.0.1:8080".to_owned());
     let app = build_router()
         .await
-        .expect("memory api-server bootstrap failed");
+        .expect("llm standalone-gateway bootstrap failed");
     let listener = tokio::net::TcpListener::bind(&bind_address)
         .await
-        .expect("bind memory api-server listener failed");
-    tracing::info!("sdkwork-llm-api-server listening on {bind_address}");
+        .expect("bind llm standalone-gateway listener failed");
+    tracing::info!("sdkwork-llm-standalone-gateway listening on {bind_address}");
     axum::serve(listener, app)
         .await
-        .expect("serve memory api-server failed");
+        .expect("serve llm standalone-gateway failed");
 }

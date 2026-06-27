@@ -10,9 +10,9 @@ use serde_json::json;
 use tower::util::ServiceExt;
 
 const DEV_AUTH_TOKEN: &str =
-    "Bearer tenant_id=100_001;user_id=9001;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
+    "Bearer tenant_id=100_001;user_id=1;session_id=s-1;app_id=sdkwork-llm;auth_level=password";
 const DEV_ACCESS_TOKEN: &str =
-    "tenant_id=100_001;user_id=9001;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
+    "tenant_id=100_001;user_id=1;session_id=s-1;app_id=sdkwork-llm;environment=dev;deployment_mode=saas";
 
 fn authed_get(uri: &str) -> Request<Body> {
     Request::builder()

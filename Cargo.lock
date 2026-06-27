@@ -1611,6 +1611,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "sdkwork-database-id"
+version = "0.1.0"
+dependencies = [
+ "sdkwork-database-config",
+ "sdkwork-database-sqlx",
+ "sdkwork-id-core",
+ "sqlx",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "sdkwork-database-lifecycle"
 version = "0.1.0"
 dependencies = [
@@ -1635,8 +1647,8 @@ dependencies = [
  "chrono",
  "paste",
  "sdkwork-database-config",
+ "sdkwork-database-id",
  "sdkwork-database-sqlx",
- "sdkwork-id-core",
  "serde",
  "serde_json",
  "sqlx",
@@ -1679,6 +1691,7 @@ dependencies = [
  "base64",
  "chrono",
  "rand_core 0.6.4",
+ "sdkwork-database-id",
  "sdkwork-iam-context-service",
  "sdkwork-iam-module-registry",
  "sha2",
@@ -1766,7 +1779,7 @@ name = "sdkwork-intelligence-llm-service"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "sdkwork-id-core",
+ "sdkwork-database-id",
  "sdkwork-llm-contract",
  "sdkwork-llm-core",
  "sdkwork-llm-plugin-native-sql",
@@ -1783,11 +1796,7 @@ name = "sdkwork-llm-api-server"
 version = "0.1.0"
 dependencies = [
  "axum",
- "sdkwork-intelligence-llm-repository-sqlx",
- "sdkwork-intelligence-llm-service",
- "sdkwork-routes-llm-app-api",
- "sdkwork-routes-llm-backend-api",
- "sdkwork-routes-llm-open-api",
+ "sdkwork-llm-gateway-assembly",
  "sdkwork-web-bootstrap",
  "tokio",
  "tracing",
@@ -1821,6 +1830,19 @@ dependencies = [
  "sdkwork-database-lifecycle",
  "sdkwork-database-spi",
  "sdkwork-database-sqlx",
+]
+
+[[package]]
+name = "sdkwork-llm-gateway-assembly"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "sdkwork-intelligence-llm-repository-sqlx",
+ "sdkwork-intelligence-llm-service",
+ "sdkwork-routes-llm-app-api",
+ "sdkwork-routes-llm-backend-api",
+ "sdkwork-routes-llm-open-api",
+ "tokio",
 ]
 
 [[package]]
@@ -1967,11 +1989,14 @@ dependencies = [
 name = "sdkwork-utils-rust"
 version = "0.10.0"
 dependencies = [
+ "aes-gcm",
  "base64",
  "chrono",
+ "hkdf",
  "hmac",
  "rand 0.8.6",
  "regex",
+ "serde",
  "serde_json",
  "sha2",
  "urlencoding",

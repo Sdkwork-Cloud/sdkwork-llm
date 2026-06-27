@@ -14,7 +14,7 @@ tables:
       - { name: id, type: bigint, constraints: [primary_key, snowflake] }
       - { name: uuid, type: varchar(64), constraints: [required, public_id] }
       - { name: tenant_id, type: bigint, constraints: [required] }
-      - { name: organization_id, type: bigint, nullable: true }
+      - { name: organization_id, type: bigint, nullable: false, default: 0 }
       - { name: owner_subject_type, type: varchar(32), constraints: ["enum: [user, organization, app, project, agent, session, external]"] }
       - { name: owner_subject_id, type: varchar(128), constraints: [required] }
       - { name: space_type, type: varchar(32), constraints: ["enum: [personal, agent, team, app, project, session, imported, external_shadow]"] }

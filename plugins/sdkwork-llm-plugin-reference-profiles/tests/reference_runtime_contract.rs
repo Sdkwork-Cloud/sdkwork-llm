@@ -18,7 +18,7 @@ use sdkwork_llm_spi::{
 #[tokio::test]
 async fn reference_runtime_round_trips_core_ports_and_retrieves_by_keyword() {
     let runtime = ReferenceLlmRuntime::new();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     LlmRecordStorePort::create(
         &runtime,
@@ -120,7 +120,7 @@ async fn reference_runtime_round_trips_core_ports_and_retrieves_by_keyword() {
 #[tokio::test]
 async fn reference_runtime_outbox_context_eval_and_bridge_fail_closed_are_deterministic() {
     let runtime = ReferenceLlmRuntime::new();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     LlmRecordStorePort::create(
         &runtime,
@@ -204,9 +204,9 @@ async fn reference_runtime_outbox_context_eval_and_bridge_fail_closed_are_determ
 #[tokio::test]
 async fn reference_runtime_round_trips_learning_and_trace_ports_by_scope() {
     let runtime = ReferenceLlmRuntime::new();
-    let tenant_one = LlmScopeContext::for_test(1, 1);
-    let tenant_two = LlmScopeContext::for_test(2, 2);
-    let wrong_space = LlmScopeContext::for_test(1, 2);
+    let tenant_one = LlmScopeContext::for_test(100_001, 1);
+    let tenant_two = LlmScopeContext::for_test(100_002, 2);
+    let wrong_space = LlmScopeContext::for_test(100_001, 2);
 
     LlmRecordStorePort::create(
         &runtime,
@@ -279,7 +279,7 @@ async fn reference_runtime_round_trips_learning_and_trace_ports_by_scope() {
         UpsertLlmHabitCommand {
             scope: tenant_one.clone(),
             habit_id: "habit-reference".to_string(),
-            user_id: 42,
+            user_id: 1,
             habit_key: "answer_style:concise".to_string(),
             habit_type: "preference".to_string(),
             description: "Prefers concise answers".to_string(),
@@ -296,7 +296,7 @@ async fn reference_runtime_round_trips_learning_and_trace_ports_by_scope() {
         &runtime,
         PromoteLlmHabitCommand {
             scope: tenant_one.clone(),
-            user_id: 42,
+            user_id: 1,
             habit_key: "answer_style:concise".to_string(),
             promoted_record_id: Some("rec-trace".to_string()),
         },
@@ -308,7 +308,7 @@ async fn reference_runtime_round_trips_learning_and_trace_ports_by_scope() {
         &runtime,
         DecayLlmHabitCommand {
             scope: tenant_one.clone(),
-            user_id: 42,
+            user_id: 1,
             habit_key: "answer_style:concise".to_string(),
             strength_delta: 0.1,
         },
@@ -398,7 +398,7 @@ async fn reference_runtime_round_trips_learning_and_trace_ports_by_scope() {
         &runtime,
         RetrieveLlmHabitQuery {
             scope: wrong_space.clone(),
-            user_id: 42,
+            user_id: 1,
             habit_key: "answer_style:concise".to_string(),
         },
     )

@@ -11,7 +11,7 @@ use sdkwork_llm_spi::{
 fn candidate_lifecycle_port_contract_types_are_public_and_scoped() {
     accept_candidate_port_object(None);
 
-    let scope = LlmScopeContext::for_test(1, 10);
+    let scope = LlmScopeContext::for_test(100_001, 10);
     let create = CreateLlmCandidateCommand {
         scope: scope.clone(),
         candidate_id: "cand-1".to_string(),
@@ -62,11 +62,11 @@ fn candidate_lifecycle_port_contract_types_are_public_and_scoped() {
 fn habit_learning_port_contract_types_are_public_and_user_scoped() {
     accept_habit_port_object(None);
 
-    let scope = LlmScopeContext::for_test(1, 10);
+    let scope = LlmScopeContext::for_test(100_001, 10);
     let upsert = UpsertLlmHabitCommand {
         scope: scope.clone(),
         habit_id: "habit-1".to_string(),
-        user_id: 42,
+        user_id: 1,
         habit_key: "answer_style:concise".to_string(),
         habit_type: "preference".to_string(),
         description: "Prefers concise answers".to_string(),
@@ -109,7 +109,7 @@ fn habit_learning_port_contract_types_are_public_and_user_scoped() {
         metadata_json: upsert.metadata_json,
     };
 
-    assert_eq!(retrieve.user_id, 42);
+    assert_eq!(retrieve.user_id, 1);
     assert_eq!(promote.promoted_record_id.as_deref(), Some("rec-1"));
     assert_eq!(decay.strength_delta, 0.1);
     assert_eq!(habit.habit_key, "answer_style:concise");
@@ -119,7 +119,7 @@ fn habit_learning_port_contract_types_are_public_and_user_scoped() {
 fn retrieval_trace_port_contract_types_are_public_and_bounded() {
     accept_retrieval_trace_port_object(None);
 
-    let scope = LlmScopeContext::for_test(1, 10);
+    let scope = LlmScopeContext::for_test(100_001, 10);
     let hit = LlmRetrievalHitDraft {
         hit_id: "hit-1".to_string(),
         record_id: Some("rec-1".to_string()),

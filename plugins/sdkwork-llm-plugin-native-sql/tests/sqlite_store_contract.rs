@@ -125,7 +125,7 @@ fn retrieval_trace_command(
 #[tokio::test]
 async fn sqlite_store_applies_phase1_migration_and_round_trips_event_and_record() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     store
         .append_event(&scope, "evt-1", "User prefers concise answers")
@@ -156,7 +156,7 @@ async fn sqlite_store_applies_phase1_migration_and_round_trips_event_and_record(
 #[tokio::test]
 async fn sqlite_store_preserves_event_content_with_json_sensitive_characters() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     let content = r#"User said "use C:\sdkwork\memory" for local tests"#;
     store
@@ -176,7 +176,7 @@ async fn sqlite_store_preserves_event_content_with_json_sensitive_characters() {
 #[tokio::test]
 async fn sqlite_store_reads_event_payload_as_structured_json() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     let content = "line one\nline two";
     store
@@ -196,7 +196,7 @@ async fn sqlite_store_reads_event_payload_as_structured_json() {
 #[tokio::test]
 async fn sqlite_store_implements_record_and_event_store_spi_ports() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     let event = LlmEventStorePort::append(
         &store,
@@ -228,9 +228,9 @@ async fn sqlite_store_implements_record_and_event_store_spi_ports() {
 #[tokio::test]
 async fn sqlite_store_keeps_records_and_events_isolated_by_tenant_and_space() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let tenant_one = LlmScopeContext::for_test(1, 1);
-    let tenant_two = LlmScopeContext::for_test(2, 2);
-    let wrong_space = LlmScopeContext::for_test(1, 2);
+    let tenant_one = LlmScopeContext::for_test(100_001, 1);
+    let tenant_two = LlmScopeContext::for_test(100_002, 2);
+    let wrong_space = LlmScopeContext::for_test(100_001, 2);
 
     store
         .append_event(&tenant_one, "evt-shared", "tenant one event")
@@ -289,8 +289,8 @@ async fn sqlite_store_keeps_records_and_events_isolated_by_tenant_and_space() {
 #[tokio::test]
 async fn sqlite_store_spi_retrieve_methods_require_matching_scope() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let tenant_one = LlmScopeContext::for_test(1, 1);
-    let tenant_two = LlmScopeContext::for_test(2, 2);
+    let tenant_one = LlmScopeContext::for_test(100_001, 1);
+    let tenant_two = LlmScopeContext::for_test(100_002, 2);
 
     LlmEventStorePort::append(
         &store,
@@ -338,7 +338,7 @@ async fn sqlite_store_spi_retrieve_methods_require_matching_scope() {
 #[tokio::test]
 async fn sqlite_store_soft_deletes_records_and_suppresses_retrieve() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     store
         .create_record(&scope, "rec-delete", "preference", "delete me")
@@ -367,7 +367,7 @@ async fn sqlite_store_soft_deletes_records_and_suppresses_retrieve() {
 #[tokio::test]
 async fn sqlite_store_record_delete_is_idempotent_for_already_deleted_records() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     store
         .create_record(&scope, "rec-delete-repeat", "preference", "delete me")
@@ -392,9 +392,9 @@ async fn sqlite_store_record_delete_is_idempotent_for_already_deleted_records() 
 #[tokio::test]
 async fn sqlite_store_record_delete_does_not_cross_tenant_or_space_scope() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let tenant_one = LlmScopeContext::for_test(1, 1);
-    let tenant_two = LlmScopeContext::for_test(2, 2);
-    let wrong_space = LlmScopeContext::for_test(1, 2);
+    let tenant_one = LlmScopeContext::for_test(100_001, 1);
+    let tenant_two = LlmScopeContext::for_test(100_002, 2);
+    let wrong_space = LlmScopeContext::for_test(100_001, 2);
 
     store
         .create_record(&tenant_one, "rec-delete-scoped", "preference", "tenant one")
@@ -432,7 +432,7 @@ async fn sqlite_store_record_delete_does_not_cross_tenant_or_space_scope() {
 #[tokio::test]
 async fn sqlite_store_implements_record_delete_spi_port() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     LlmRecordStorePort::create(
         &store,
@@ -472,7 +472,7 @@ async fn sqlite_store_implements_record_delete_spi_port() {
 #[tokio::test]
 async fn sqlite_store_event_append_is_idempotent_for_same_scope_event_and_content() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     store
         .append_event(&scope, "evt-idempotent", "same content")
@@ -495,7 +495,7 @@ async fn sqlite_store_event_append_is_idempotent_for_same_scope_event_and_conten
 #[tokio::test]
 async fn sqlite_store_event_append_rejects_same_scope_event_with_different_content() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     store
         .append_event(&scope, "evt-conflict", "alpha")
@@ -512,8 +512,8 @@ async fn sqlite_store_event_append_rejects_same_scope_event_with_different_conte
 #[tokio::test]
 async fn sqlite_store_event_append_rejects_same_tenant_event_reuse_in_different_space() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let first_space = LlmScopeContext::for_test(1, 1);
-    let second_space = LlmScopeContext::for_test(1, 2);
+    let first_space = LlmScopeContext::for_test(100_001, 1);
+    let second_space = LlmScopeContext::for_test(100_001, 2);
 
     store
         .append_event(&first_space, "evt-space-conflict", "same content")
@@ -535,7 +535,7 @@ async fn sqlite_store_event_append_rejects_same_tenant_event_reuse_in_different_
 #[tokio::test]
 async fn sqlite_store_spi_event_append_maps_idempotency_conflict_to_spi_conflict() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     LlmEventStorePort::append(
         &store,
@@ -564,8 +564,8 @@ async fn sqlite_store_spi_event_append_maps_idempotency_conflict_to_spi_conflict
 #[tokio::test]
 async fn sqlite_store_appends_and_retrieves_audit_records_by_scope() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let tenant_one = LlmScopeContext::for_test(1, 1);
-    let tenant_two = LlmScopeContext::for_test(2, 2);
+    let tenant_one = LlmScopeContext::for_test(100_001, 1);
+    let tenant_two = LlmScopeContext::for_test(100_002, 2);
 
     store
         .append_audit(
@@ -605,7 +605,7 @@ async fn sqlite_store_appends_and_retrieves_audit_records_by_scope() {
     assert_eq!(tenant_one_audit.resource_id, "rec-1");
     assert_eq!(tenant_two_audit.resource_id, "rec-2");
     assert!(store
-        .retrieve_audit(&LlmScopeContext::for_test(3, 3), "aud-shared")
+        .retrieve_audit(&LlmScopeContext::for_test(100_003, 3), "aud-shared")
         .await
         .unwrap()
         .is_none());
@@ -614,7 +614,7 @@ async fn sqlite_store_appends_and_retrieves_audit_records_by_scope() {
 #[tokio::test]
 async fn sqlite_store_implements_audit_store_spi_port() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     let audit = LlmAuditStorePort::append(
         &store,
@@ -650,8 +650,8 @@ async fn sqlite_store_implements_audit_store_spi_port() {
 #[tokio::test]
 async fn sqlite_store_appends_and_retrieves_outbox_events_by_tenant_scope() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let tenant_one = LlmScopeContext::for_test(1, 1);
-    let tenant_two = LlmScopeContext::for_test(2, 2);
+    let tenant_one = LlmScopeContext::for_test(100_001, 1);
+    let tenant_two = LlmScopeContext::for_test(100_002, 2);
 
     store
         .append_outbox_event(outbox_command(
@@ -688,7 +688,7 @@ async fn sqlite_store_appends_and_retrieves_outbox_events_by_tenant_scope() {
     assert_eq!(tenant_one_outbox.retry_count, 0);
     assert_eq!(tenant_two_outbox.aggregate_id, "rec-2");
     assert!(store
-        .retrieve_outbox_event(&LlmScopeContext::for_test(3, 3), "out-shared")
+        .retrieve_outbox_event(&LlmScopeContext::for_test(100_003, 3), "out-shared")
         .await
         .unwrap()
         .is_none());
@@ -697,7 +697,7 @@ async fn sqlite_store_appends_and_retrieves_outbox_events_by_tenant_scope() {
 #[tokio::test]
 async fn sqlite_store_outbox_append_is_idempotent_for_same_tenant_event_and_payload() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     store
         .append_outbox_event(outbox_command(
@@ -730,7 +730,7 @@ async fn sqlite_store_outbox_append_is_idempotent_for_same_tenant_event_and_payl
 #[tokio::test]
 async fn sqlite_store_outbox_append_rejects_same_tenant_event_with_different_payload() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     store
         .append_outbox_event(outbox_command(
@@ -757,7 +757,7 @@ async fn sqlite_store_outbox_append_rejects_same_tenant_event_with_different_pay
 #[tokio::test]
 async fn sqlite_store_implements_outbox_store_spi_port() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     let outbox = LlmOutboxStorePort::append(
         &store,
@@ -796,7 +796,7 @@ async fn sqlite_store_implements_outbox_store_spi_port() {
 #[tokio::test]
 async fn sqlite_store_spi_outbox_append_maps_idempotency_conflict_to_spi_conflict() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     LlmOutboxStorePort::append(
         &store,
@@ -833,8 +833,8 @@ async fn sqlite_store_spi_outbox_append_maps_idempotency_conflict_to_spi_conflic
 #[tokio::test]
 async fn sqlite_store_lists_pending_outbox_events_by_tenant_scope_and_limit() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let tenant_one = LlmScopeContext::for_test(1, 1);
-    let tenant_two = LlmScopeContext::for_test(2, 2);
+    let tenant_one = LlmScopeContext::for_test(100_001, 1);
+    let tenant_two = LlmScopeContext::for_test(100_002, 2);
 
     store
         .append_outbox_event(outbox_command(
@@ -877,7 +877,7 @@ async fn sqlite_store_lists_pending_outbox_events_by_tenant_scope_and_limit() {
 #[tokio::test]
 async fn sqlite_store_marks_outbox_published_and_excludes_it_from_pending() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     store
         .append_outbox_event(outbox_command(
@@ -910,7 +910,7 @@ async fn sqlite_store_marks_outbox_published_and_excludes_it_from_pending() {
 #[tokio::test]
 async fn sqlite_store_marks_outbox_failed_increments_retry_and_excludes_it_from_pending() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     store
         .append_outbox_event(outbox_command(
@@ -938,9 +938,9 @@ async fn sqlite_store_marks_outbox_failed_increments_retry_and_excludes_it_from_
 #[tokio::test]
 async fn sqlite_store_outbox_delivery_lifecycle_does_not_cross_tenant_scope() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let tenant_one = LlmScopeContext::for_test(1, 1);
-    let tenant_two = LlmScopeContext::for_test(2, 2);
-    let missing_tenant = LlmScopeContext::for_test(3, 3);
+    let tenant_one = LlmScopeContext::for_test(100_001, 1);
+    let tenant_two = LlmScopeContext::for_test(100_002, 2);
+    let missing_tenant = LlmScopeContext::for_test(100_003, 3);
 
     store
         .append_outbox_event(outbox_command(
@@ -984,7 +984,7 @@ async fn sqlite_store_outbox_delivery_lifecycle_does_not_cross_tenant_scope() {
 #[tokio::test]
 async fn sqlite_store_implements_outbox_delivery_lifecycle_spi_port() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let scope = LlmScopeContext::for_test(1, 1);
+    let scope = LlmScopeContext::for_test(100_001, 1);
 
     LlmOutboxStorePort::append(
         &store,
@@ -1067,9 +1067,9 @@ async fn sqlite_store_implements_outbox_delivery_lifecycle_spi_port() {
 #[tokio::test]
 async fn sqlite_store_creates_and_decides_candidates_by_tenant_and_space_scope() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let tenant_one = LlmScopeContext::for_test(1, 1);
-    let tenant_two = LlmScopeContext::for_test(2, 2);
-    let wrong_space = LlmScopeContext::for_test(1, 2);
+    let tenant_one = LlmScopeContext::for_test(100_001, 1);
+    let tenant_two = LlmScopeContext::for_test(100_002, 2);
+    let wrong_space = LlmScopeContext::for_test(100_001, 2);
 
     let tenant_one_candidate = LlmCandidateStorePort::create(
         &store,
@@ -1135,8 +1135,8 @@ async fn sqlite_store_creates_and_decides_candidates_by_tenant_and_space_scope()
 #[tokio::test]
 async fn sqlite_store_upserts_promotes_and_decays_habits_by_tenant_space_and_user_scope() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let tenant_one = LlmScopeContext::for_test(1, 1);
-    let tenant_two = LlmScopeContext::for_test(2, 2);
+    let tenant_one = LlmScopeContext::for_test(100_001, 1);
+    let tenant_two = LlmScopeContext::for_test(100_002, 2);
     let wrong_user = 43;
 
     store
@@ -1144,7 +1144,7 @@ async fn sqlite_store_upserts_promotes_and_decays_habits_by_tenant_space_and_use
         .await
         .unwrap();
     let inserted =
-        LlmHabitStorePort::upsert(&store, habit_command(tenant_one.clone(), "habit-1", 42))
+        LlmHabitStorePort::upsert(&store, habit_command(tenant_one.clone(), "habit-1", 1))
             .await
             .unwrap();
     let updated = LlmHabitStorePort::upsert(
@@ -1152,20 +1152,20 @@ async fn sqlite_store_upserts_promotes_and_decays_habits_by_tenant_space_and_use
         UpsertLlmHabitCommand {
             strength: 0.7,
             support_count: 4,
-            ..habit_command(tenant_one.clone(), "habit-1", 42)
+            ..habit_command(tenant_one.clone(), "habit-1", 1)
         },
     )
     .await
     .unwrap();
     let tenant_two_habit =
-        LlmHabitStorePort::upsert(&store, habit_command(tenant_two.clone(), "habit-2", 42))
+        LlmHabitStorePort::upsert(&store, habit_command(tenant_two.clone(), "habit-2", 1))
             .await
             .unwrap();
     let promoted = LlmHabitStorePort::promote(
         &store,
         PromoteLlmHabitCommand {
             scope: tenant_one.clone(),
-            user_id: 42,
+            user_id: 1,
             habit_key: "answer_style:concise".to_string(),
             promoted_record_id: Some("rec-promoted".to_string()),
         },
@@ -1177,7 +1177,7 @@ async fn sqlite_store_upserts_promotes_and_decays_habits_by_tenant_space_and_use
         &store,
         DecayLlmHabitCommand {
             scope: tenant_one.clone(),
-            user_id: 42,
+            user_id: 1,
             habit_key: "answer_style:concise".to_string(),
             strength_delta: 0.2,
         },
@@ -1210,9 +1210,9 @@ async fn sqlite_store_upserts_promotes_and_decays_habits_by_tenant_space_and_use
 #[tokio::test]
 async fn sqlite_store_appends_retrieval_trace_with_hits_and_context_pack_by_scope() {
     let store = NativeSqlLlmStore::new_in_memory_sqlite().await.unwrap();
-    let tenant_one = LlmScopeContext::for_test(1, 1);
-    let tenant_two = LlmScopeContext::for_test(2, 2);
-    let wrong_space = LlmScopeContext::for_test(1, 2);
+    let tenant_one = LlmScopeContext::for_test(100_001, 1);
+    let tenant_two = LlmScopeContext::for_test(100_002, 2);
+    let wrong_space = LlmScopeContext::for_test(100_001, 2);
 
     store
         .create_record(&tenant_one, "rec-trace-1", "answer_style", "concise")

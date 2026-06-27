@@ -19,4 +19,4 @@ sdkwork-routes-llm-app-api.workspace = true
 sdkwork-routes-llm-open-api.workspace = true
 sdkwork-routes-llm-backend-api.workspace = true
 sdkwork-web-core.workspace = true
-sdkwork-llm-api-server = { path = "../sdkwork-llm-api-server" }
+sdkwork-llm-standalone-gateway = { path = "../sdkwork-llm-standalone-gateway" }

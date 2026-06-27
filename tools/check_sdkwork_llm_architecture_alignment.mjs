@@ -95,7 +95,7 @@ assert(cargoToml.includes('sdkwork-database-sqlx'), 'Cargo.toml must declare sdk
 assert(cargoToml.includes('sdkwork-database-repository'), 'Cargo.toml must declare sdkwork-database-repository');
 assert(cargoToml.includes('sdkwork-utils-rust'), 'Cargo.toml must declare sdkwork-utils-rust');
 assert(cargoToml.includes('sdkwork-id-core'), 'Cargo.toml must declare sdkwork-id-core');
-assert(cargoToml.includes('sdkwork-llm-api-server'), 'Cargo.toml must include sdkwork-llm-api-server');
+assert(cargoToml.includes('sdkwork-llm-standalone-gateway'), 'Cargo.toml must include sdkwork-llm-standalone-gateway');
 assert(cargoToml.includes('sdkwork-routes-llm-common'), 'Cargo.toml must include sdkwork-routes-llm-common');
 assert(!cargoToml.includes('sdkwork-discovery'), 'sdkwork-discovery is not required until RPC services exist');
 
@@ -384,7 +384,7 @@ const crateComponentSpecs = [
   'crates/sdkwork-intelligence-llm-service/specs/component.spec.json',
   'crates/sdkwork-intelligence-llm-repository-sqlx/specs/component.spec.json',
   'crates/sdkwork-llm-database-host/specs/component.spec.json',
-  'crates/sdkwork-llm-api-server/specs/component.spec.json',
+  'crates/sdkwork-llm-standalone-gateway/specs/component.spec.json',
 ];
 for (const relativePath of crateComponentSpecs) {
   assert(fs.existsSync(path.join(repoRoot, relativePath)), `${relativePath} must exist`);

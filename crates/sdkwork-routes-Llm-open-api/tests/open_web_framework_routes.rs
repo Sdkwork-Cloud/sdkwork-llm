@@ -12,7 +12,7 @@ use sdkwork_web_core::DefaultWebRequestContextResolver;
 use std::sync::{Arc, Mutex};
 use tower::util::ServiceExt;
 
-const DEV_API_KEY: &str = "api_key_id=dev-key;tenant_id=100_001;user_id=2001;app_id=sdkwork-llm";
+const DEV_API_KEY: &str = "api_key_id=dev-key;tenant_id=100_001;user_id=1;app_id=sdkwork-llm";
 
 #[tokio::test]
 async fn open_router_web_framework_rejects_unauthenticated_requests() {

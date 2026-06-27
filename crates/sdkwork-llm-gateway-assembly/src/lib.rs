@@ -1,18 +1,9 @@
-//! Generated gateway assembly for sdkwork-llm.
+//! Gateway assembly for sdkwork-llm.
 
+mod bootstrap;
 mod generated;
 
-pub struct ApplicationAssembly {
-    pub router: axum::Router,
-}
-
-pub async fn assemble_application_router() -> ApplicationAssembly {
-    let mut router = axum::Router::new();
-    router = router.merge(sdkwork_routes_llm_app_api::gateway_mount());
-    router = router.merge(sdkwork_routes_llm_backend_api::gateway_mount());
-    router = router.merge(sdkwork_routes_llm_open_api::gateway_mount());
-    ApplicationAssembly { router }
-}
+pub use bootstrap::{assemble_application_router, ApplicationAssembly};
 
 pub fn assembly_route_count() -> usize {
     generated::ROUTE_CRATE_COUNT

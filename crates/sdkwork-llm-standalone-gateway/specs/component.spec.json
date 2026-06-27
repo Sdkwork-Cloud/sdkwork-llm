@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "sdkwork.component.spec",
   "component": {
-    "name": "sdkwork-llm-api-server",
+    "name": "sdkwork-llm-standalone-gateway",
     "displayName": "SDKWork LLM API Server",
     "version": "0.1.0",
     "type": "rust-binary",
-    "root": "sdkwork-llm/crates/sdkwork-llm-api-server",
+    "root": "sdkwork-llm/crates/sdkwork-llm-standalone-gateway",
     "domain": "intelligence",
     "capability": "memory",
     "surface": "backend-service",
@@ -22,7 +22,7 @@
   ],
   "contracts": {
     "publicExports": [],
-    "runtimeEntrypoints": ["sdkwork-llm-api-server"],
+    "runtimeEntrypoints": ["sdkwork-llm-standalone-gateway"],
     "sdkClients": [],
     "sdkDependencies": [
       { "workspace": "sdkwork-web-framework" },
@@ -33,6 +33,6 @@
     "configKeys": ["SDKWORK_LLM_APPLICATION_PUBLIC_INGRESS_BIND", "SDKWORK_LLM_DATABASE_URL"]
   },
   "verification": {
-    "commands": ["cargo test -p sdkwork-llm-api-server"]
+    "commands": ["cargo test -p sdkwork-llm-standalone-gateway"]
   }
 }

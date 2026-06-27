@@ -3,7 +3,7 @@ use axum::http::{Request, StatusCode};
 use sdkwork_llm_contract::runtime_env::env_test_lock;
 use tower::util::ServiceExt;
 
-const DEV_API_KEY: &str = "api_key_id=dev-key;tenant_id=100_001;user_id=2001;app_id=sdkwork-llm";
+const DEV_API_KEY: &str = "api_key_id=dev-key;tenant_id=100_001;user_id=1;app_id=sdkwork-llm";
 
 #[tokio::test]
 async fn api_server_bootstrap_auth_and_healthz_contracts() {
@@ -11,9 +11,9 @@ async fn api_server_bootstrap_auth_and_healthz_contracts() {
     std::env::set_var("SDKWORK_LLM_ENVIRONMENT", "development");
     std::env::set_var("SDKWORK_LLM_DEV_AUTH_BYPASS", "true");
     std::env::set_var("SDKWORK_LLM_DATABASE_URL", "sqlite::memory:");
-    let dev_app = sdkwork_llm_api_server::build_router()
+    let dev_app = sdkwork_llm_standalone_gateway::build_router()
         .await
-        .expect("api-server bootstrap should succeed with in-memory sqlite");
+        .expect("standalone-gateway bootstrap should succeed with in-memory sqlite");
 
     let healthz = dev_app
         .oneshot(
@@ -33,9 +33,9 @@ async fn api_server_bootstrap_auth_and_healthz_contracts() {
     std::env::remove_var("SDKWORK_IAM_DATABASE_URL");
     std::env::set_var("SDKWORK_LLM_DATABASE_URL", "sqlite::memory:");
 
-    let production_app = sdkwork_llm_api_server::build_router()
+    let production_app = sdkwork_llm_standalone_gateway::build_router()
         .await
-        .expect("api-server bootstrap should succeed with in-memory sqlite");
+        .expect("standalone-gateway bootstrap should succeed with in-memory sqlite");
 
     let protected = production_app
         .oneshot(
