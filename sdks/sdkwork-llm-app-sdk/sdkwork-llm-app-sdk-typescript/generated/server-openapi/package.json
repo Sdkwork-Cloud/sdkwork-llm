@@ -1,5 +1,5 @@
 {
-  "name": "@sdkwork/llm-app-sdk",
+  "name": "@sdkwork/memory-app-sdk",
   "version": "0.1.0",
   "private": true,
   "description": "Generator-owned TypeScript transport SDK for sdkwork-llm-app-sdk.",

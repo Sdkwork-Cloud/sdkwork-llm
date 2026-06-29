@@ -1,7 +1,7 @@
 import { backendApiPath } from './paths';
 import type { HttpClient } from '../http/client';
 
-import type { LlmAuditLogList, LlmCandidate, LlmCandidateList, LlmEvalRun, LlmEvalRunList, LlmEvalRunRequest, LlmEvent, LlmEventList, LlmExtractionRequest, LlmImplementationProfile, LlmImplementationProfileList, LlmImplementationProfileRequest, LlmIndex, LlmIndexList, LlmIndexRequest, LlmLearningJob, LlmMigrationJobRequest, LlmProviderBinding, LlmProviderBindingList, LlmProviderBindingRequest, LlmProviderHealth, LlmRecord, LlmRecordList, LlmRecordRequest, LlmRetentionJobRequest, LlmRetrievalProfile, LlmRetrievalProfileList, LlmRetrievalProfileRequest, LlmRetrievalTrace, LlmRetrievalTraceList, LlmReviewRequest, LlmSpace, LlmSpaceList, LlmSpaceRequest } from '../types';
+import type { LlmAuditLog, LlmCandidate, LlmEvalRun, LlmEvalRunRequest, LlmEvent, LlmExtractionRequest, LlmImplementationProfile, LlmImplementationProfileRequest, LlmIndex, LlmIndexRequest, LlmLearningJob, LlmMigrationJobRequest, LlmProviderBinding, LlmProviderBindingRequest, LlmProviderHealth, LlmRecord, LlmRecordRequest, LlmRetentionJobRequest, LlmRetrievalProfile, LlmRetrievalProfileRequest, LlmRetrievalTrace, LlmReviewRequest, LlmSpace, LlmSpaceRequest, PageInfo } from '../types';
 
 
 export interface LlmMigrationJobsCreateParams {
@@ -68,13 +68,13 @@ export class LlmAuditLogsApi {
   }
 
 
-async list(params?: LlmAuditLogsListParams): Promise<LlmAuditLogList> {
+async list(params?: LlmAuditLogsListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmAuditLogList>(appendQueryString(backendApiPath(`/llm/audit_logs`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(backendApiPath(`/llm/audit_logs`), query));
   }
 }
 
@@ -92,13 +92,13 @@ export class LlmRetrievalTracesApi {
   }
 
 
-async list(params?: LlmRetrievalTracesListParams): Promise<LlmRetrievalTraceList> {
+async list(params?: LlmRetrievalTracesListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmRetrievalTraceList>(appendQueryString(backendApiPath(`/llm/retrieval_traces`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(backendApiPath(`/llm/retrieval_traces`), query));
   }
 
 async retrieve(traceId: string): Promise<LlmRetrievalTrace> {
@@ -124,13 +124,13 @@ export class LlmEvalRunsApi {
   }
 
 
-async list(params?: LlmEvalRunsListParams): Promise<LlmEvalRunList> {
+async list(params?: LlmEvalRunsListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmEvalRunList>(appendQueryString(backendApiPath(`/llm/eval_runs`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(backendApiPath(`/llm/eval_runs`), query));
   }
 
 async create(body: LlmEvalRunRequest, params?: LlmEvalRunsCreateParams): Promise<LlmEvalRun> {
@@ -179,13 +179,13 @@ export class LlmProviderBindingsApi {
   }
 
 
-async list(params?: LlmProviderBindingsListParams): Promise<LlmProviderBindingList> {
+async list(params?: LlmProviderBindingsListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmProviderBindingList>(appendQueryString(backendApiPath(`/llm/provider_bindings`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(backendApiPath(`/llm/provider_bindings`), query));
   }
 
 async create(body: LlmProviderBindingRequest, params?: LlmProviderBindingsCreateParams): Promise<LlmProviderBinding> {
@@ -221,13 +221,13 @@ export class LlmImplementationProfilesApi {
   }
 
 
-async list(params?: LlmImplementationProfilesListParams): Promise<LlmImplementationProfileList> {
+async list(params?: LlmImplementationProfilesListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmImplementationProfileList>(appendQueryString(backendApiPath(`/llm/implementation_profiles`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(backendApiPath(`/llm/implementation_profiles`), query));
   }
 
 async create(body: LlmImplementationProfileRequest, params?: LlmImplementationProfilesCreateParams): Promise<LlmImplementationProfile> {
@@ -267,13 +267,13 @@ export class LlmRetrievalProfilesApi {
   }
 
 
-async list(params?: LlmRetrievalProfilesListParams): Promise<LlmRetrievalProfileList> {
+async list(params?: LlmRetrievalProfilesListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmRetrievalProfileList>(appendQueryString(backendApiPath(`/llm/retrieval_profiles`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(backendApiPath(`/llm/retrieval_profiles`), query));
   }
 
 async create(body: LlmRetrievalProfileRequest, params?: LlmRetrievalProfilesCreateParams): Promise<LlmRetrievalProfile> {
@@ -317,13 +317,13 @@ export class LlmIndexesApi {
   }
 
 
-async list(params?: LlmIndexesListParams): Promise<LlmIndexList> {
+async list(params?: LlmIndexesListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmIndexList>(appendQueryString(backendApiPath(`/llm/indexes`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(backendApiPath(`/llm/indexes`), query));
   }
 
 async create(body: LlmIndexRequest, params?: LlmIndexesCreateParams): Promise<LlmIndex> {
@@ -427,13 +427,13 @@ export class LlmCandidatesApi {
   }
 
 
-async list(params?: LlmCandidatesListParams): Promise<LlmCandidateList> {
+async list(params?: LlmCandidatesListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmCandidateList>(appendQueryString(backendApiPath(`/llm/candidates`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(backendApiPath(`/llm/candidates`), query));
   }
 
 async approve(candidateId: string, body: LlmReviewRequest, params?: LlmCandidatesApproveParams): Promise<LlmCandidate> {
@@ -471,13 +471,13 @@ export class LlmEventsApi {
   }
 
 
-async list(params?: LlmEventsListParams): Promise<LlmEventList> {
+async list(params?: LlmEventsListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmEventList>(appendQueryString(backendApiPath(`/llm/events`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(backendApiPath(`/llm/events`), query));
   }
 
 async retrieve(eventId: string): Promise<LlmEvent> {
@@ -503,13 +503,13 @@ export class LlmRecordsApi {
   }
 
 
-async list(params?: LlmRecordsListParams): Promise<LlmRecordList> {
+async list(params?: LlmRecordsListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmRecordList>(appendQueryString(backendApiPath(`/llm/records`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(backendApiPath(`/llm/records`), query));
   }
 
 async retrieve(recordId: string): Promise<LlmRecord> {
@@ -545,13 +545,13 @@ export class LlmSpacesApi {
   }
 
 
-async list(params?: LlmSpacesListParams): Promise<LlmSpaceList> {
+async list(params?: LlmSpacesListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmSpaceList>(appendQueryString(backendApiPath(`/llm/spaces`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(backendApiPath(`/llm/spaces`), query));
   }
 
 async retrieve(spaceId: string): Promise<LlmSpace> {

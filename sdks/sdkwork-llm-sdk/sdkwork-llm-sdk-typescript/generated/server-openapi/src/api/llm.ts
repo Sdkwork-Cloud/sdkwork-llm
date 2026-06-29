@@ -1,7 +1,7 @@
 import { customApiPath } from './paths';
 import type { HttpClient } from '../http/client';
 
-import type { LlmCandidate, LlmCandidateList, LlmCapabilities, LlmContextPack, LlmContextPackRequest, LlmEvent, LlmEventRequest, LlmExtractionRequest, LlmFeedback, LlmFeedbackRequest, LlmLearningJob, LlmProviderHealth, LlmRecord, LlmRecordList, LlmRecordRequest, LlmRetrievalRequest, LlmRetrievalResult } from '../types';
+import type { LlmCandidate, LlmCapabilities, LlmContextPack, LlmContextPackRequest, LlmEvent, LlmEventRequest, LlmExtractionRequest, LlmFeedback, LlmFeedbackRequest, LlmLearningJob, LlmProviderHealth, LlmRecord, LlmRecordRequest, LlmRetrievalRequest, LlmRetrievalResult, PageInfo } from '../types';
 
 
 export class LlmProviderHealthApi {
@@ -32,14 +32,14 @@ export class LlmCandidatesApi {
   }
 
 
-async list(params?: LlmCandidatesListParams): Promise<LlmCandidateList> {
+async list(params?: LlmCandidatesListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'decision_state', value: params?.decisionState, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmCandidateList>(appendQueryString(customApiPath(`/llm/candidates`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(customApiPath(`/llm/candidates`), query));
   }
 
 async retrieve(candidateId: string): Promise<LlmCandidate> {
@@ -168,7 +168,7 @@ export class LlmRecordsApi {
   }
 
 
-async list(params?: LlmRecordsListParams): Promise<LlmRecordList> {
+async list(params?: LlmRecordsListParams): Promise<Record<string, unknown>> {
     const query = buildQueryString([
       { name: 'q', value: params?.q, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
@@ -177,7 +177,7 @@ async list(params?: LlmRecordsListParams): Promise<LlmRecordList> {
       { name: 'record_type', value: params?.recordType, style: 'form', explode: true, allowReserved: false },
       { name: 'external_subject_ref', value: params?.externalSubjectRef, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<LlmRecordList>(appendQueryString(customApiPath(`/llm/records`), query));
+    return this.client.get<Record<string, unknown>>(appendQueryString(customApiPath(`/llm/records`), query));
   }
 
 async create(body: LlmRecordRequest, params?: LlmRecordsCreateParams): Promise<LlmRecord> {
