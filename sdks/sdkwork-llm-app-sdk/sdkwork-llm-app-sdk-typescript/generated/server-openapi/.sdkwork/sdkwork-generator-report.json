@@ -12,189 +12,44 @@
   "mode": "apply",
   "hasChanges": true,
   "hasDestructiveChanges": false,
-  "changeFingerprint": "f2c0fbee5c83f2f956a1339e75e418b0f4494117db59dbfd88f5e6df98108930",
+  "changeFingerprint": "4fa231f85712eca6fb3192856a45c463f5ed558b88cf7bb8e88ac1d60adffc36",
   "changeImpact": {
     "schemaVersion": 1,
     "areas": [
       "api-surface",
-      "models",
-      "runtime",
       "build-metadata",
-      "publish-workflow",
       "documentation",
-      "custom-scaffold",
       "unknown"
     ],
     "details": [
       {
         "area": "api-surface",
         "paths": [
-          "src/api/base.ts",
-          "src/api/index.ts",
-          "src/api/llm.ts",
-          "src/api/paths.ts",
-          "src/http/client.ts",
           "src/sdk.ts"
-        ]
-      },
-      {
-        "area": "models",
-        "paths": [
-          "src/types/candidates-approve-response201.ts",
-          "src/types/candidates-list-response.ts",
-          "src/types/candidates-reject-response201.ts",
-          "src/types/candidates-retrieve-response.ts",
-          "src/types/common.ts",
-          "src/types/context-packs-create-response201.ts",
-          "src/types/context-packs-retrieve-response.ts",
-          "src/types/events-create-response201.ts",
-          "src/types/events-retrieve-response.ts",
-          "src/types/export-jobs-create-response201.ts",
-          "src/types/export-jobs-retrieve-response.ts",
-          "src/types/extractions-create-response201.ts",
-          "src/types/feedback-create-response201.ts",
-          "src/types/field-error.ts",
-          "src/types/forget-requests-create-response201.ts",
-          "src/types/forget-requests-retrieve-response.ts",
-          "src/types/habits-confirm-response201.ts",
-          "src/types/habits-list-response.ts",
-          "src/types/habits-reject-response201.ts",
-          "src/types/habits-retrieve-response.ts",
-          "src/types/habits-update-response.ts",
-          "src/types/index.ts",
-          "src/types/learning-settings-retrieve-response.ts",
-          "src/types/learning-settings-update-response.ts",
-          "src/types/llm-audit-log-list.ts",
-          "src/types/llm-audit-log.ts",
-          "src/types/llm-candidate-list.ts",
-          "src/types/llm-candidate.ts",
-          "src/types/llm-capabilities.ts",
-          "src/types/llm-context-pack-request.ts",
-          "src/types/llm-context-pack.ts",
-          "src/types/llm-eval-run-list.ts",
-          "src/types/llm-eval-run-request.ts",
-          "src/types/llm-eval-run.ts",
-          "src/types/llm-event-list.ts",
-          "src/types/llm-event-request.ts",
-          "src/types/llm-event.ts",
-          "src/types/llm-export-job.ts",
-          "src/types/llm-export-request.ts",
-          "src/types/llm-extraction-request.ts",
-          "src/types/llm-feedback-request.ts",
-          "src/types/llm-feedback.ts",
-          "src/types/llm-forget-job.ts",
-          "src/types/llm-forget-request.ts",
-          "src/types/llm-habit-list.ts",
-          "src/types/llm-habit-request.ts",
-          "src/types/llm-habit.ts",
-          "src/types/llm-implementation-profile-list.ts",
-          "src/types/llm-implementation-profile-request.ts",
-          "src/types/llm-implementation-profile.ts",
-          "src/types/llm-index-list.ts",
-          "src/types/llm-index-request.ts",
-          "src/types/llm-index.ts",
-          "src/types/llm-learning-job.ts",
-          "src/types/llm-learning-settings-request.ts",
-          "src/types/llm-learning-settings.ts",
-          "src/types/llm-migration-job-request.ts",
-          "src/types/llm-page-info.ts",
-          "src/types/llm-provider-binding-list.ts",
-          "src/types/llm-provider-binding-request.ts",
-          "src/types/llm-provider-binding.ts",
-          "src/types/llm-provider-health.ts",
-          "src/types/llm-record-list.ts",
-          "src/types/llm-record-request.ts",
-          "src/types/llm-record-source-list.ts",
-          "src/types/llm-record-source.ts",
-          "src/types/llm-record.ts",
-          "src/types/llm-retention-job-request.ts",
-          "src/types/llm-retrieval-hit.ts",
-          "src/types/llm-retrieval-profile-list.ts",
-          "src/types/llm-retrieval-profile-request.ts",
-          "src/types/llm-retrieval-profile.ts",
-          "src/types/llm-retrieval-request.ts",
-          "src/types/llm-retrieval-result.ts",
-          "src/types/llm-retrieval-trace-list.ts",
-          "src/types/llm-retrieval-trace.ts",
-          "src/types/llm-review-request.ts",
-          "src/types/llm-space-list.ts",
-          "src/types/llm-space-request.ts",
-          "src/types/llm-space.ts",
-          "src/types/page-info.ts",
-          "src/types/problem-detail.ts",
-          "src/types/problem-details.ts",
-          "src/types/records-create-response201.ts",
-          "src/types/records-list-response.ts",
-          "src/types/records-retrieve-response.ts",
-          "src/types/records-sources-list-response.ts",
-          "src/types/records-update-response.ts",
-          "src/types/retrievals-create-response201.ts",
-          "src/types/retrievals-retrieve-response.ts",
-          "src/types/sdk-work-api-response.ts",
-          "src/types/sdk-work-command-data.ts",
-          "src/types/sdk-work-command-response.ts",
-          "src/types/sdk-work-list-response.ts",
-          "src/types/sdk-work-page-data.ts",
-          "src/types/sdk-work-platform-error-code.ts",
-          "src/types/sdk-work-resource-data.ts",
-          "src/types/sdk-work-resource-response.ts",
-          "src/types/spaces-create-response201.ts",
-          "src/types/spaces-list-response.ts",
-          "src/types/spaces-retrieve-response.ts",
-          "src/types/spaces-update-response.ts"
-        ]
-      },
-      {
-        "area": "runtime",
-        "paths": [
-          "src/auth/index.ts",
-          "src/http/client.ts",
-          "src/http/index.ts"
         ]
       },
       {
         "area": "build-metadata",
         "paths": [
           "package.json",
-          "sdkwork-sdk.json",
-          "tsconfig.json"
-        ]
-      },
-      {
-        "area": "publish-workflow",
-        "paths": [
-          "bin/publish-core.mjs",
-          "bin/publish.ps1",
-          "bin/publish.sh",
-          "bin/sdk-gen.bat",
-          "bin/sdk-gen.sh"
+          "sdkwork-sdk.json"
         ]
       },
       {
         "area": "documentation",
         "paths": [
-          "CHANGELOG.md",
-          "custom/README.md",
           "README.md"
-        ]
-      },
-      {
-        "area": "custom-scaffold",
-        "paths": [
-          "custom/build-runtime.mjs",
-          "custom/README.md"
         ]
       },
       {
         "area": "unknown",
         "paths": [
-          "LICENSE",
           "src/index.ts"
         ]
       }
     ],
     "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required."
+    "summary": "Detected impact areas: api-surface, build-metadata, documentation, unknown. Verification is required."
   },
   "executionDecision": {
     "schemaVersion": 1,
@@ -205,7 +60,6 @@
     "summary": "Changes have been applied. Run the required verification plan now.",
     "reasons": [
       "manual-review-required",
-      "preserved-legacy-files",
       "unknown-impact",
       "verification-required"
     ]
@@ -218,7 +72,7 @@
         "id": "verify-check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, build-metadata, documentation, unknown.",
         "workingDirectory": "E:\\sdkwork-space\\sdkwork-llm\\sdks\\sdkwork-llm-app-sdk\\sdkwork-llm-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -236,7 +90,7 @@
         "id": "verify-build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, build-metadata, documentation, unknown.",
         "workingDirectory": "E:\\sdkwork-space\\sdkwork-llm\\sdks\\sdkwork-llm-app-sdk\\sdkwork-llm-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -255,13 +109,13 @@
   "verificationPlan": {
     "shouldRun": true,
     "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+    "summary": "Detected impact areas: api-surface, build-metadata, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
     "steps": [
       {
         "id": "check",
         "title": "Unified package check",
         "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
+        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, build-metadata, documentation, unknown.",
         "workingDirectory": "E:\\sdkwork-space\\sdkwork-llm\\sdks\\sdkwork-llm-app-sdk\\sdkwork-llm-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -279,7 +133,7 @@
         "id": "build",
         "title": "Unified package build",
         "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
+        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, build-metadata, documentation, unknown.",
         "workingDirectory": "E:\\sdkwork-space\\sdkwork-llm\\sdks\\sdkwork-llm-app-sdk\\sdkwork-llm-app-sdk-typescript\\generated\\server-openapi",
         "command": "node",
         "args": [
@@ -302,7 +156,7 @@
     "sdkType": "app",
     "protocol": "http",
     "outputPath": "E:\\sdkwork-space\\sdkwork-llm\\sdks\\sdkwork-llm-app-sdk\\sdkwork-llm-app-sdk-typescript\\generated\\server-openapi",
-    "packageName": "@sdkwork/memory-app-sdk"
+    "packageName": "@sdkwork/llm-app-sdk"
   },
   "versioning": {
     "resolvedVersion": "0.1.0",
@@ -318,14 +172,22 @@
   "syncSummary": {
     "dryRun": false,
     "controlPlaneEnabled": true,
-    "writtenFiles": 124,
-    "skippedScaffoldFiles": 0,
-    "skippedUnchangedGeneratedFiles": 0,
+    "writtenFiles": 5,
+    "skippedScaffoldFiles": 2,
+    "skippedUnchangedGeneratedFiles": 117,
     "deletedGeneratedFiles": 0,
     "changeSummaryPath": ".sdkwork/sdkwork-generator-changes.json",
-    "changeFingerprint": "f2c0fbee5c83f2f956a1339e75e418b0f4494117db59dbfd88f5e6df98108930",
+    "changeFingerprint": "4fa231f85712eca6fb3192856a45c463f5ed558b88cf7bb8e88ac1d60adffc36",
     "changes": {
-      "createdGeneratedFiles": [
+      "createdGeneratedFiles": [],
+      "updatedGeneratedFiles": [
+        "package.json",
+        "README.md",
+        "sdkwork-sdk.json",
+        "src/index.ts",
+        "src/sdk.ts"
+      ],
+      "unchangedGeneratedFiles": [
         "bin/publish-core.mjs",
         "bin/publish.ps1",
         "bin/publish.sh",
@@ -333,9 +195,6 @@
         "bin/sdk-gen.sh",
         "CHANGELOG.md",
         "LICENSE",
-        "package.json",
-        "README.md",
-        "sdkwork-sdk.json",
         "src/api/base.ts",
         "src/api/index.ts",
         "src/api/llm.ts",
@@ -343,8 +202,6 @@
         "src/auth/index.ts",
         "src/http/client.ts",
         "src/http/index.ts",
-        "src/index.ts",
-        "src/sdk.ts",
         "src/types/candidates-approve-response201.ts",
         "src/types/candidates-list-response.ts",
         "src/types/candidates-reject-response201.ts",
@@ -449,209 +306,62 @@
         "src/types/spaces-update-response.ts",
         "tsconfig.json"
       ],
-      "updatedGeneratedFiles": [],
-      "unchangedGeneratedFiles": [],
       "deletedGeneratedFiles": [],
-      "scaffoldedFiles": [
+      "scaffoldedFiles": [],
+      "preservedScaffoldFiles": [
         "custom/build-runtime.mjs",
         "custom/README.md"
       ],
-      "preservedScaffoldFiles": [],
       "backedUpFiles": []
     },
     "impact": {
       "schemaVersion": 1,
       "areas": [
         "api-surface",
-        "models",
-        "runtime",
         "build-metadata",
-        "publish-workflow",
         "documentation",
-        "custom-scaffold",
         "unknown"
       ],
       "details": [
         {
           "area": "api-surface",
           "paths": [
-            "src/api/base.ts",
-            "src/api/index.ts",
-            "src/api/llm.ts",
-            "src/api/paths.ts",
-            "src/http/client.ts",
             "src/sdk.ts"
-          ]
-        },
-        {
-          "area": "models",
-          "paths": [
-            "src/types/candidates-approve-response201.ts",
-            "src/types/candidates-list-response.ts",
-            "src/types/candidates-reject-response201.ts",
-            "src/types/candidates-retrieve-response.ts",
-            "src/types/common.ts",
-            "src/types/context-packs-create-response201.ts",
-            "src/types/context-packs-retrieve-response.ts",
-            "src/types/events-create-response201.ts",
-            "src/types/events-retrieve-response.ts",
-            "src/types/export-jobs-create-response201.ts",
-            "src/types/export-jobs-retrieve-response.ts",
-            "src/types/extractions-create-response201.ts",
-            "src/types/feedback-create-response201.ts",
-            "src/types/field-error.ts",
-            "src/types/forget-requests-create-response201.ts",
-            "src/types/forget-requests-retrieve-response.ts",
-            "src/types/habits-confirm-response201.ts",
-            "src/types/habits-list-response.ts",
-            "src/types/habits-reject-response201.ts",
-            "src/types/habits-retrieve-response.ts",
-            "src/types/habits-update-response.ts",
-            "src/types/index.ts",
-            "src/types/learning-settings-retrieve-response.ts",
-            "src/types/learning-settings-update-response.ts",
-            "src/types/llm-audit-log-list.ts",
-            "src/types/llm-audit-log.ts",
-            "src/types/llm-candidate-list.ts",
-            "src/types/llm-candidate.ts",
-            "src/types/llm-capabilities.ts",
-            "src/types/llm-context-pack-request.ts",
-            "src/types/llm-context-pack.ts",
-            "src/types/llm-eval-run-list.ts",
-            "src/types/llm-eval-run-request.ts",
-            "src/types/llm-eval-run.ts",
-            "src/types/llm-event-list.ts",
-            "src/types/llm-event-request.ts",
-            "src/types/llm-event.ts",
-            "src/types/llm-export-job.ts",
-            "src/types/llm-export-request.ts",
-            "src/types/llm-extraction-request.ts",
-            "src/types/llm-feedback-request.ts",
-            "src/types/llm-feedback.ts",
-            "src/types/llm-forget-job.ts",
-            "src/types/llm-forget-request.ts",
-            "src/types/llm-habit-list.ts",
-            "src/types/llm-habit-request.ts",
-            "src/types/llm-habit.ts",
-            "src/types/llm-implementation-profile-list.ts",
-            "src/types/llm-implementation-profile-request.ts",
-            "src/types/llm-implementation-profile.ts",
-            "src/types/llm-index-list.ts",
-            "src/types/llm-index-request.ts",
-            "src/types/llm-index.ts",
-            "src/types/llm-learning-job.ts",
-            "src/types/llm-learning-settings-request.ts",
-            "src/types/llm-learning-settings.ts",
-            "src/types/llm-migration-job-request.ts",
-            "src/types/llm-page-info.ts",
-            "src/types/llm-provider-binding-list.ts",
-            "src/types/llm-provider-binding-request.ts",
-            "src/types/llm-provider-binding.ts",
-            "src/types/llm-provider-health.ts",
-            "src/types/llm-record-list.ts",
-            "src/types/llm-record-request.ts",
-            "src/types/llm-record-source-list.ts",
-            "src/types/llm-record-source.ts",
-            "src/types/llm-record.ts",
-            "src/types/llm-retention-job-request.ts",
-            "src/types/llm-retrieval-hit.ts",
-            "src/types/llm-retrieval-profile-list.ts",
-            "src/types/llm-retrieval-profile-request.ts",
-            "src/types/llm-retrieval-profile.ts",
-            "src/types/llm-retrieval-request.ts",
-            "src/types/llm-retrieval-result.ts",
-            "src/types/llm-retrieval-trace-list.ts",
-            "src/types/llm-retrieval-trace.ts",
-            "src/types/llm-review-request.ts",
-            "src/types/llm-space-list.ts",
-            "src/types/llm-space-request.ts",
-            "src/types/llm-space.ts",
-            "src/types/page-info.ts",
-            "src/types/problem-detail.ts",
-            "src/types/problem-details.ts",
-            "src/types/records-create-response201.ts",
-            "src/types/records-list-response.ts",
-            "src/types/records-retrieve-response.ts",
-            "src/types/records-sources-list-response.ts",
-            "src/types/records-update-response.ts",
-            "src/types/retrievals-create-response201.ts",
-            "src/types/retrievals-retrieve-response.ts",
-            "src/types/sdk-work-api-response.ts",
-            "src/types/sdk-work-command-data.ts",
-            "src/types/sdk-work-command-response.ts",
-            "src/types/sdk-work-list-response.ts",
-            "src/types/sdk-work-page-data.ts",
-            "src/types/sdk-work-platform-error-code.ts",
-            "src/types/sdk-work-resource-data.ts",
-            "src/types/sdk-work-resource-response.ts",
-            "src/types/spaces-create-response201.ts",
-            "src/types/spaces-list-response.ts",
-            "src/types/spaces-retrieve-response.ts",
-            "src/types/spaces-update-response.ts"
-          ]
-        },
-        {
-          "area": "runtime",
-          "paths": [
-            "src/auth/index.ts",
-            "src/http/client.ts",
-            "src/http/index.ts"
           ]
         },
         {
           "area": "build-metadata",
           "paths": [
             "package.json",
-            "sdkwork-sdk.json",
-            "tsconfig.json"
-          ]
-        },
-        {
-          "area": "publish-workflow",
-          "paths": [
-            "bin/publish-core.mjs",
-            "bin/publish.ps1",
-            "bin/publish.sh",
-            "bin/sdk-gen.bat",
-            "bin/sdk-gen.sh"
+            "sdkwork-sdk.json"
           ]
         },
         {
           "area": "documentation",
           "paths": [
-            "CHANGELOG.md",
-            "custom/README.md",
             "README.md"
-          ]
-        },
-        {
-          "area": "custom-scaffold",
-          "paths": [
-            "custom/build-runtime.mjs",
-            "custom/README.md"
           ]
         },
         {
           "area": "unknown",
           "paths": [
-            "LICENSE",
             "src/index.ts"
           ]
         }
       ],
       "requiresVerification": true,
-      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required."
+      "summary": "Detected impact areas: api-surface, build-metadata, documentation, unknown. Verification is required."
     },
     "verificationPlan": {
       "shouldRun": true,
       "runPhase": "now",
-      "summary": "Detected impact areas: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
+      "summary": "Detected impact areas: api-surface, build-metadata, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
       "steps": [
         {
           "id": "check",
           "title": "Unified package check",
           "required": true,
-          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
+          "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, build-metadata, documentation, unknown.",
           "workingDirectory": "E:\\sdkwork-space\\sdkwork-llm\\sdks\\sdkwork-llm-app-sdk\\sdkwork-llm-app-sdk-typescript\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -669,7 +379,7 @@
           "id": "build",
           "title": "Unified package build",
           "required": true,
-          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, models, runtime, build-metadata, publish-workflow, documentation, custom-scaffold, unknown.",
+          "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, build-metadata, documentation, unknown.",
           "workingDirectory": "E:\\sdkwork-space\\sdkwork-llm\\sdks\\sdkwork-llm-app-sdk\\sdkwork-llm-app-sdk-typescript\\generated\\server-openapi",
           "command": "node",
           "args": [
@@ -694,12 +404,11 @@
       "summary": "Changes have been applied. Run the required verification plan now.",
       "reasons": [
         "manual-review-required",
-        "preserved-legacy-files",
         "unknown-impact",
         "verification-required"
       ]
     },
     "backedUpFiles": [],
-    "preservedLegacyFiles": true
+    "preservedLegacyFiles": false
   }
 }

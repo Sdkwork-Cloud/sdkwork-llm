@@ -7,7 +7,7 @@
     "language": "typescript",
     "sdkType": "backend",
     "protocol": "http",
-    "packageName": "@sdkwork/memory-backend-sdk"
+    "packageName": "@sdkwork/llm-backend-sdk"
   },
   "generatedFiles": [
     {
@@ -40,15 +40,15 @@
     },
     {
       "path": "package.json",
-      "sha256": "3da0d6a3ec9b7adfc20109b7894f0c7cfbaf44e80a29d1971b7cd0cc892df1bd"
+      "sha256": "5ffb34b092bb55cf13911bee9b583a8c156946c3684457354af890817e6734bc"
     },
     {
       "path": "README.md",
-      "sha256": "2afbad536c0657db5622175d362e990022d2b9745aafcbf65dfabf90b16776b7"
+      "sha256": "77692d638e4a66cb5f29ae1bab3f23d76713f4e18de2f8b7ac8801453eb0c93f"
     },
     {
       "path": "sdkwork-sdk.json",
-      "sha256": "e124e660875d16f1514f922af5a7e4d8d20fb76fc5803439b00efad35c84407f"
+      "sha256": "c3bc1eec44b532522024e961037bc3428cd1f6c4cc32e49e9b810ca6523ffcc2"
     },
     {
       "path": "src/api/base.ts",
@@ -80,11 +80,11 @@
     },
     {
       "path": "src/index.ts",
-      "sha256": "3a4a3f9c5ce1c5bf55baf261e7b648091cbef7ba2c30ea402dd15f3f37820956"
+      "sha256": "0f4257ebe73da166dfb23fa0ef1d33deaed5da20dde15409bb3c007c49698b79"
     },
     {
       "path": "src/sdk.ts",
-      "sha256": "ceaba66a09912ce70df2845f027c5579124eee6efca0149a3a8feb34f5058405"
+      "sha256": "f8afabf3e4b4d4f8153466d051f46b4473eab8fd041618a5a11fe5eb2a446078"
     },
     {
       "path": "src/types/audit-logs-list-response.ts",

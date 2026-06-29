@@ -1,4 +1,4 @@
-export { SdkworkCustomClient, createClient } from './sdk';
+export { SdkworkLlmOpenClient, createClient } from './sdk';
 export * from './types';
 export * from './api';
 export * from './http';

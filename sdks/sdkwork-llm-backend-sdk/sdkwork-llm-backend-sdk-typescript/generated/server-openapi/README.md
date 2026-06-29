@@ -5,20 +5,20 @@ Generated SDKWork v3 dual-token transport SDK.
 ## Installation
 
 ```bash
-npm install @sdkwork/memory-backend-sdk
+npm install @sdkwork/llm-backend-sdk
 # or
-yarn add @sdkwork/memory-backend-sdk
+yarn add @sdkwork/llm-backend-sdk
 # or
-pnpm add @sdkwork/memory-backend-sdk
+pnpm add @sdkwork/llm-backend-sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { SdkworkBackendClient } from '@sdkwork/memory-backend-sdk';
+import { SdkworkLlmBackendClient } from '@sdkwork/llm-backend-sdk';
 
-const client = new SdkworkBackendClient({
-  baseUrl: 'http://localhost:8080',
+const client = new SdkworkLlmBackendClient({
+  baseUrl: 'https://api.sdkwork.com',
   timeout: 30000,
 });
 
@@ -41,10 +41,10 @@ Access-Token: <accessToken>
 ## Configuration (Non-Auth)
 
 ```typescript
-import { SdkworkBackendClient } from '@sdkwork/memory-backend-sdk';
+import { SdkworkLlmBackendClient } from '@sdkwork/llm-backend-sdk';
 
-const client = new SdkworkBackendClient({
-  baseUrl: 'http://localhost:8080',
+const client = new SdkworkLlmBackendClient({
+  baseUrl: 'https://api.sdkwork.com',
   timeout: 30000, // Request timeout in ms
   headers: {      // Custom headers
     'X-Custom-Header': 'value',
@@ -68,7 +68,7 @@ const result = await client.llm.providerHealth.retrieve();
 ## Error Handling
 
 ```typescript
-import { SdkworkBackendClient, NetworkError, TimeoutError, AuthenticationError } from '@sdkwork/memory-backend-sdk';
+import { SdkworkLlmBackendClient, NetworkError, TimeoutError, AuthenticationError } from '@sdkwork/llm-backend-sdk';
 
 try {
   const result = await client.llm.providerHealth.retrieve();

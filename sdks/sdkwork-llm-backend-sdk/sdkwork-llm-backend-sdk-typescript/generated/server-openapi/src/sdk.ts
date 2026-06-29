@@ -4,7 +4,7 @@ import type { AuthTokenManager } from '@sdkwork/sdk-common';
 
 import { LlmApi, createLlmApi } from './api/llm';
 
-export class SdkworkBackendClient {
+export class SdkworkLlmBackendClient {
   private httpClient: HttpClient;
 
   public readonly llm: LlmApi;
@@ -33,8 +33,8 @@ export class SdkworkBackendClient {
   }
 }
 
-export function createClient(config: SdkworkBackendConfig): SdkworkBackendClient {
-  return new SdkworkBackendClient(config);
+export function createClient(config: SdkworkBackendConfig): SdkworkLlmBackendClient {
+  return new SdkworkLlmBackendClient(config);
 }
 
-export default SdkworkBackendClient;
+export default SdkworkLlmBackendClient;

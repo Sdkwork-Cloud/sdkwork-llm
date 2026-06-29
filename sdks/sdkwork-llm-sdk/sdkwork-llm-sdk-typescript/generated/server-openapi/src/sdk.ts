@@ -3,7 +3,7 @@ import type { SdkworkCustomConfig } from './types/common';
 
 import { LlmApi, createLlmApi } from './api/llm';
 
-export class SdkworkCustomClient {
+export class SdkworkLlmOpenClient {
   private httpClient: HttpClient;
 
   public readonly llm: LlmApi;
@@ -22,8 +22,8 @@ export class SdkworkCustomClient {
   }
 }
 
-export function createClient(config: SdkworkCustomConfig): SdkworkCustomClient {
-  return new SdkworkCustomClient(config);
+export function createClient(config: SdkworkCustomConfig): SdkworkLlmOpenClient {
+  return new SdkworkLlmOpenClient(config);
 }
 
-export default SdkworkCustomClient;
+export default SdkworkLlmOpenClient;

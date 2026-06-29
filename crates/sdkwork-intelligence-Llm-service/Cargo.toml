@@ -13,6 +13,7 @@ sdkwork-llm-contract.workspace = true
 sdkwork-llm-core.workspace = true
 sdkwork-llm-plugin-native-sql.workspace = true
 sdkwork-database-id.workspace = true
+sdkwork-id-core.workspace = true
 sdkwork-utils-rust.workspace = true
 
 [dev-dependencies]

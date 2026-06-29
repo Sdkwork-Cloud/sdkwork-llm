@@ -5,20 +5,20 @@ Generated SDKWork v3 API-key open-api transport SDK.
 ## Installation
 
 ```bash
-npm install @sdkwork/memory-sdk
+npm install @sdkwork/llm-sdk
 # or
-yarn add @sdkwork/memory-sdk
+yarn add @sdkwork/llm-sdk
 # or
-pnpm add @sdkwork/memory-sdk
+pnpm add @sdkwork/llm-sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { SdkworkCustomClient } from '@sdkwork/memory-sdk';
+import { SdkworkLlmOpenClient } from '@sdkwork/llm-sdk';
 
-const client = new SdkworkCustomClient({
-  baseUrl: 'http://localhost:8080',
+const client = new SdkworkLlmOpenClient({
+  baseUrl: 'https://api.sdkwork.com',
   timeout: 30000,
 });
 
@@ -44,10 +44,10 @@ client.setApiKey('your-api-key');
 ## Configuration (Non-Auth)
 
 ```typescript
-import { SdkworkCustomClient } from '@sdkwork/memory-sdk';
+import { SdkworkLlmOpenClient } from '@sdkwork/llm-sdk';
 
-const client = new SdkworkCustomClient({
-  baseUrl: 'http://localhost:8080',
+const client = new SdkworkLlmOpenClient({
+  baseUrl: 'https://api.sdkwork.com',
   timeout: 30000, // Request timeout in ms
   headers: {      // Custom headers
     'X-Custom-Header': 'value',
@@ -71,7 +71,7 @@ const result = await client.llm.capabilities.retrieve();
 ## Error Handling
 
 ```typescript
-import { SdkworkCustomClient, NetworkError, TimeoutError, AuthenticationError } from '@sdkwork/memory-sdk';
+import { SdkworkLlmOpenClient, NetworkError, TimeoutError, AuthenticationError } from '@sdkwork/llm-sdk';
 
 try {
   const result = await client.llm.capabilities.retrieve();

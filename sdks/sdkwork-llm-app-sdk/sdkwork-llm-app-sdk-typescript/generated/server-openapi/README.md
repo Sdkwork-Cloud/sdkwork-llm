@@ -5,20 +5,20 @@ Generated SDKWork v3 dual-token transport SDK.
 ## Installation
 
 ```bash
-npm install @sdkwork/memory-app-sdk
+npm install @sdkwork/llm-app-sdk
 # or
-yarn add @sdkwork/memory-app-sdk
+yarn add @sdkwork/llm-app-sdk
 # or
-pnpm add @sdkwork/memory-app-sdk
+pnpm add @sdkwork/llm-app-sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { SdkworkAppClient } from '@sdkwork/memory-app-sdk';
+import { SdkworkLlmAppClient } from '@sdkwork/llm-app-sdk';
 
-const client = new SdkworkAppClient({
-  baseUrl: 'http://localhost:8080',
+const client = new SdkworkLlmAppClient({
+  baseUrl: 'https://api.sdkwork.com',
   timeout: 30000,
 });
 
@@ -41,10 +41,10 @@ Access-Token: <accessToken>
 ## Configuration (Non-Auth)
 
 ```typescript
-import { SdkworkAppClient } from '@sdkwork/memory-app-sdk';
+import { SdkworkLlmAppClient } from '@sdkwork/llm-app-sdk';
 
-const client = new SdkworkAppClient({
-  baseUrl: 'http://localhost:8080',
+const client = new SdkworkLlmAppClient({
+  baseUrl: 'https://api.sdkwork.com',
   timeout: 30000, // Request timeout in ms
   headers: {      // Custom headers
     'X-Custom-Header': 'value',
@@ -68,7 +68,7 @@ const result = await client.llm.learningSettings.retrieve();
 ## Error Handling
 
 ```typescript
-import { SdkworkAppClient, NetworkError, TimeoutError, AuthenticationError } from '@sdkwork/memory-app-sdk';
+import { SdkworkLlmAppClient, NetworkError, TimeoutError, AuthenticationError } from '@sdkwork/llm-app-sdk';
 
 try {
   const result = await client.llm.learningSettings.retrieve();
