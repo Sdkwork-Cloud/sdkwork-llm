@@ -1,4 +1,5 @@
 # sdkwork-llm
+repository-kind: application
 
 SDKWork LLM service and SDK families for embedding-optional AI LLM memory, self-learning, habit LLM memory, and provider-switchable retrieval.
 
