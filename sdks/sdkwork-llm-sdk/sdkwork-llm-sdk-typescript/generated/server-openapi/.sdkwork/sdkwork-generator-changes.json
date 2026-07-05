@@ -9,16 +9,10 @@
     "protocol": "http",
     "packageName": "@sdkwork/llm-sdk"
   },
-  "changeFingerprint": "166514c2c3549b176dafe21e3e279ea69d82cd4b853237bade361cb8a1a0dd44",
+  "changeFingerprint": "68d114782a18938f2f64c4d67ee64575bab5117cb011f45952dc763b1ebbfd8d",
   "changes": {
     "createdGeneratedFiles": [],
-    "updatedGeneratedFiles": [
-      "package.json",
-      "README.md",
-      "sdkwork-sdk.json",
-      "src/index.ts",
-      "src/sdk.ts"
-    ],
+    "updatedGeneratedFiles": [],
     "unchangedGeneratedFiles": [
       "bin/publish-core.mjs",
       "bin/publish.ps1",
@@ -27,6 +21,9 @@
       "bin/sdk-gen.sh",
       "CHANGELOG.md",
       "LICENSE",
+      "package.json",
+      "README.md",
+      "sdkwork-sdk.json",
       "src/api/base.ts",
       "src/api/index.ts",
       "src/api/llm.ts",
@@ -34,6 +31,8 @@
       "src/auth/index.ts",
       "src/http/client.ts",
       "src/http/index.ts",
+      "src/index.ts",
+      "src/sdk.ts",
       "src/types/candidates-list-response.ts",
       "src/types/candidates-retrieve-response.ts",
       "src/types/capabilities-retrieve-response.ts",
@@ -132,96 +131,26 @@
   },
   "impact": {
     "schemaVersion": 1,
-    "areas": [
-      "api-surface",
-      "build-metadata",
-      "documentation",
-      "unknown"
-    ],
-    "details": [
-      {
-        "area": "api-surface",
-        "paths": [
-          "src/sdk.ts"
-        ]
-      },
-      {
-        "area": "build-metadata",
-        "paths": [
-          "package.json",
-          "sdkwork-sdk.json"
-        ]
-      },
-      {
-        "area": "documentation",
-        "paths": [
-          "README.md"
-        ]
-      },
-      {
-        "area": "unknown",
-        "paths": [
-          "src/index.ts"
-        ]
-      }
-    ],
-    "requiresVerification": true,
-    "summary": "Detected impact areas: api-surface, build-metadata, documentation, unknown. Verification is required."
+    "areas": [],
+    "details": [],
+    "requiresVerification": false,
+    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped."
   },
   "verificationPlan": {
-    "shouldRun": true,
-    "runPhase": "now",
-    "summary": "Detected impact areas: api-surface, build-metadata, documentation, unknown. Verification is required. Run the required verification commands now against the generated SDK output.",
-    "steps": [
-      {
-        "id": "check",
-        "title": "Unified package check",
-        "required": true,
-        "rationale": "Validate the generated package with the unified publish helper. Triggered by: api-surface, build-metadata, documentation, unknown.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-llm\\sdks\\sdkwork-llm-sdk\\sdkwork-llm-sdk-typescript\\generated\\server-openapi",
-        "command": "node",
-        "args": [
-          "./bin/publish-core.mjs",
-          "--language",
-          "typescript",
-          "--project-dir",
-          ".",
-          "--action",
-          "check"
-        ],
-        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action check"
-      },
-      {
-        "id": "build",
-        "title": "Unified package build",
-        "required": true,
-        "rationale": "Run the full package build because this language uses a lighter check path than the final build. Triggered by: api-surface, build-metadata, documentation, unknown.",
-        "workingDirectory": "E:\\sdkwork-space\\sdkwork-llm\\sdks\\sdkwork-llm-sdk\\sdkwork-llm-sdk-typescript\\generated\\server-openapi",
-        "command": "node",
-        "args": [
-          "./bin/publish-core.mjs",
-          "--language",
-          "typescript",
-          "--project-dir",
-          ".",
-          "--action",
-          "build"
-        ],
-        "displayCommand": "node ./bin/publish-core.mjs --language typescript --project-dir . --action build"
-      }
-    ]
+    "shouldRun": false,
+    "runPhase": "skip",
+    "summary": "No generated, scaffold, or backup changes detected. Verification can be skipped.",
+    "steps": []
   },
   "executionDecision": {
     "schemaVersion": 1,
-    "riskLevel": "high",
-    "nextAction": "verify",
+    "riskLevel": "low",
+    "nextAction": "skip",
     "requiresManualReview": false,
     "applyRequiresExpectedFingerprint": false,
-    "summary": "Changes have been applied. Run the required verification plan now.",
+    "summary": "No actionable changes were detected. No apply or verification step is required.",
     "reasons": [
-      "manual-review-required",
-      "unknown-impact",
-      "verification-required"
+      "no-actionable-changes"
     ]
   },
   "preservedLegacyFiles": false

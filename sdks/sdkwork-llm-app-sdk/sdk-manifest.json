@@ -66,5 +66,53 @@
   "dependencyApiSurfaces": [],
   "ownerOnlyOperationCount": null,
   "standardVersion": "2026-06-10",
-  "managedBy": "tools/materialize_phase1_contracts.mjs"
+  "managedBy": "tools/materialize_phase1_contracts.mjs",
+  "transportPackageName": "sdkwork-llm-app-sdk-generated-typescript",
+  "typescript": {
+    "composedRoot": "sdkwork-llm-app-sdk-typescript",
+    "composedEntry": "sdkwork-llm-app-sdk-typescript/src/index.ts",
+    "transportRoot": "sdkwork-llm-app-sdk-typescript/generated/server-openapi",
+    "transportEntry": "sdkwork-llm-app-sdk-typescript/generated/server-openapi/src/index.ts"
+  },
+  "workspace": "sdkwork-llm-app-sdk",
+  "title": "SDKWork LLM App API SDK",
+  "apiVersion": "0.1.0",
+  "openapiVersion": "3.1.2",
+  "authoritySpec": "openapi/llm-app-api.openapi.json",
+  "derivedSpecs": {
+    "default": "openapi/llm-app-api.openapi.json"
+  },
+  "discoverySurface": {
+    "sdkTarget": "app",
+    "apiPrefix": "/app/v3/api",
+    "schemaUrl": "/app/v3/openapi.json",
+    "generatedProtocols": [
+      "http-openapi"
+    ],
+    "manualTransports": []
+  },
+  "metadata": {
+    "standardVersion": "2026-06-10",
+    "ownerOnlyOperationCount": null,
+    "materializationState": "authority-draft",
+    "managedBy": "tools/materialize_phase1_contracts.mjs"
+  },
+  "languages": [
+    {
+      "language": "typescript",
+      "workspace": "sdkwork-llm-app-sdk-typescript",
+      "generationState": "declared",
+      "releaseState": "not_published",
+      "generatedPath": "sdkwork-llm-app-sdk-typescript/generated/server-openapi",
+      "manifestPath": "sdkwork-llm-app-sdk-typescript/generated/server-openapi/package.json",
+      "version": "0.1.0",
+      "description": "Generator-owned TypeScript transport SDK for sdkwork-llm.app.",
+      "consumerSurface": {
+        "primaryClient": "SdkworkLlmAppClient",
+        "apiPrefix": "/app/v3/api"
+      },
+      "consumerPackageName": "@sdkwork/llm-app-sdk",
+      "transportPackageName": "sdkwork-llm-app-sdk-generated-typescript"
+    }
+  ]
 }

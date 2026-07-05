@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "language": "typescript",
   "sdkType": "app",
-  "packageName": "@sdkwork/llm-app-sdk",
+  "packageName": "sdkwork-llm-app-sdk-generated-typescript",
+  "transportPackageName": "sdkwork-llm-app-sdk-generated-typescript",
+  "consumerPackageName": "@sdkwork/llm-app-sdk",
   "generator": "@sdkwork/sdk-generator",
   "capabilities": {
     "supportsGeneratedTests": true,
