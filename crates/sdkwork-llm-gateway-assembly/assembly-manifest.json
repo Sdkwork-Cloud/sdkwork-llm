@@ -4,7 +4,7 @@
   "applicationCode": "llm",
   "packageName": "sdkwork-llm-gateway-assembly",
   "crateDir": "crates/sdkwork-llm-gateway-assembly",
-  "generatedAt": "2026-06-25T13:08:05.561Z",
+  "generatedAt": "2026-07-08T01:34:13.110Z",
   "routeCrates": [
     {
       "packageName": "sdkwork-routes-llm-app-api",

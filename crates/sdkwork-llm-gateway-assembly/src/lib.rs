@@ -1,4 +1,5 @@
 //! Gateway assembly for sdkwork-llm.
+//! Application bootstrap lives in `bootstrap.rs`; route inventory is in `assembly-manifest.json`.
 
 mod bootstrap;
 mod generated;
