@@ -40,19 +40,16 @@ $requiredFiles = @(
     "docs/schema-registry/tables/005-llm-governance.yaml",
     "sdks/README.md",
     "sdks/sdkwork-llm-sdk/README.md",
-    "sdks/sdkwork-llm-sdk/.sdkwork-assembly.json",
     "sdks/sdkwork-llm-sdk/sdk-manifest.json",
     "sdks/sdkwork-llm-sdk/specs/README.md",
     "sdks/sdkwork-llm-sdk/specs/component.spec.json",
     "sdks/sdkwork-llm-sdk/openapi/llm-open-api.openapi.json",
     "sdks/sdkwork-llm-app-sdk/README.md",
-    "sdks/sdkwork-llm-app-sdk/.sdkwork-assembly.json",
     "sdks/sdkwork-llm-app-sdk/sdk-manifest.json",
     "sdks/sdkwork-llm-app-sdk/specs/README.md",
     "sdks/sdkwork-llm-app-sdk/specs/component.spec.json",
     "sdks/sdkwork-llm-app-sdk/openapi/llm-app-api.openapi.json",
     "sdks/sdkwork-llm-backend-sdk/README.md",
-    "sdks/sdkwork-llm-backend-sdk/.sdkwork-assembly.json",
     "sdks/sdkwork-llm-backend-sdk/sdk-manifest.json",
     "sdks/sdkwork-llm-backend-sdk/specs/README.md",
     "sdks/sdkwork-llm-backend-sdk/specs/component.spec.json",
@@ -111,7 +108,7 @@ foreach ($family in @(
     @{ Path = "sdks/sdkwork-llm-app-sdk"; Authority = "sdkwork-llm.app"; Prefix = "/app/v3/api"; SchemaUrl = "/app/v3/openapi.json"; Spec = "openapi/llm-app-api.openapi.json"; Client = "SdkworkLlmAppClient" },
     @{ Path = "sdks/sdkwork-llm-backend-sdk"; Authority = "sdkwork-llm.backend"; Prefix = "/backend/v3/api"; SchemaUrl = "/backend/v3/openapi.json"; Spec = "openapi/llm-backend-api.openapi.json"; Client = "SdkworkLlmBackendClient" }
 )) {
-    $assembly = Read-JsonFile (Join-Path $family.Path ".sdkwork-assembly.json")
+    $assembly = Read-JsonFile (Join-Path $family.Path "sdk-manifest.json")
     $manifest = Read-JsonFile (Join-Path $family.Path "sdk-manifest.json")
     $component = Read-JsonFile (Join-Path $family.Path "specs/component.spec.json")
 

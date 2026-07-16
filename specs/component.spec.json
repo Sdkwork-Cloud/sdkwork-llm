@@ -20,9 +20,9 @@
       "sdkwork.app.config.json",
       "AGENTS.md",
       "specs/component.spec.json",
-      "sdks/sdkwork-llm-sdk/.sdkwork-assembly.json",
-      "sdks/sdkwork-llm-app-sdk/.sdkwork-assembly.json",
-      "sdks/sdkwork-llm-backend-sdk/.sdkwork-assembly.json"
+      "sdks/sdkwork-llm-sdk/sdk-manifest.json",
+      "sdks/sdkwork-llm-app-sdk/sdk-manifest.json",
+      "sdks/sdkwork-llm-backend-sdk/sdk-manifest.json"
     ]
   },
   "canonicalSpecs": [

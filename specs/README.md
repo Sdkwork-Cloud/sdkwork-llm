@@ -30,9 +30,9 @@ Draft contract artifacts:
 - `sdks/sdkwork-llm-sdk/openapi/llm-open-api.openapi.json`
 - `sdks/sdkwork-llm-app-sdk/openapi/llm-app-api.openapi.json`
 - `sdks/sdkwork-llm-backend-sdk/openapi/llm-backend-api.openapi.json`
-- `sdks/sdkwork-llm-sdk/.sdkwork-assembly.json`
-- `sdks/sdkwork-llm-app-sdk/.sdkwork-assembly.json`
-- `sdks/sdkwork-llm-backend-sdk/.sdkwork-assembly.json`
+- `sdks/sdkwork-llm-sdk/sdk-manifest.json`
+- `sdks/sdkwork-llm-app-sdk/sdk-manifest.json`
+- `sdks/sdkwork-llm-backend-sdk/sdk-manifest.json`
 
 Phase 1 verification:
 

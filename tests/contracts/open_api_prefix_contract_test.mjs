@@ -36,7 +36,7 @@ assert.equal(
   "Memory public open-api prefix must use /llm/v3/api to avoid /memory/.../memory URL duplication",
 );
 
-const assembly = readJson("sdks/sdkwork-llm-sdk/.sdkwork-assembly.json");
+const assembly = readJson("sdks/sdkwork-llm-sdk/sdk-manifest.json");
 assert.equal(
   assembly.discoverySurface.apiPrefix,
   openApiPrefix,

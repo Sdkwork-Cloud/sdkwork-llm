@@ -47,7 +47,7 @@ function readJson(relativePath) {
 const failures = [];
 
 for (const family of families) {
-  const assembly = readJson(path.join(family.root, ".sdkwork-assembly.json"));
+  const assembly = readJson(path.join(family.root, "sdk-manifest.json"));
   const manifest = readJson(path.join(family.root, "sdk-manifest.json"));
   const component = readJson(path.join(family.root, "specs/component.spec.json"));
 

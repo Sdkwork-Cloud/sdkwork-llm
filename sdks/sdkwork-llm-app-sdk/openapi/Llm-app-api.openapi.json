@@ -2304,7 +2304,7 @@
           }
         ],
         "responses": {
-          "201": {
+          "200": {
             "description": "Created",
             "content": {
               "application/json": {
@@ -2448,7 +2448,7 @@
           }
         ],
         "responses": {
-          "201": {
+          "200": {
             "description": "Created",
             "content": {
               "application/json": {
@@ -3001,7 +3001,7 @@
           }
         ],
         "responses": {
-          "201": {
+          "200": {
             "description": "Created",
             "content": {
               "application/json": {
@@ -3145,7 +3145,7 @@
           }
         ],
         "responses": {
-          "201": {
+          "200": {
             "description": "Created",
             "content": {
               "application/json": {

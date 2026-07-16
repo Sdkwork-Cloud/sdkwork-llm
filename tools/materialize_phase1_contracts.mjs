@@ -580,9 +580,9 @@ Draft contract artifacts:
 - \`sdks/sdkwork-llm-sdk/openapi/llm-open-api.openapi.json\`
 - \`sdks/sdkwork-llm-app-sdk/openapi/llm-app-api.openapi.json\`
 - \`sdks/sdkwork-llm-backend-sdk/openapi/llm-backend-api.openapi.json\`
-- \`sdks/sdkwork-llm-sdk/.sdkwork-assembly.json\`
-- \`sdks/sdkwork-llm-app-sdk/.sdkwork-assembly.json\`
-- \`sdks/sdkwork-llm-backend-sdk/.sdkwork-assembly.json\`
+- \`sdks/sdkwork-llm-sdk/sdk-manifest.json\`
+- \`sdks/sdkwork-llm-app-sdk/sdk-manifest.json\`
+- \`sdks/sdkwork-llm-backend-sdk/sdk-manifest.json\`
 
 Phase 1 verification:
 
@@ -611,9 +611,9 @@ powershell -ExecutionPolicy Bypass -File tools/verify_phase1.ps1
         "sdkwork.app.config.json",
         "AGENTS.md",
         "specs/component.spec.json",
-        "sdks/sdkwork-llm-sdk/.sdkwork-assembly.json",
-        "sdks/sdkwork-llm-app-sdk/.sdkwork-assembly.json",
-        "sdks/sdkwork-llm-backend-sdk/.sdkwork-assembly.json"
+        "sdks/sdkwork-llm-sdk/sdk-manifest.json",
+        "sdks/sdkwork-llm-app-sdk/sdk-manifest.json",
+        "sdks/sdkwork-llm-backend-sdk/sdk-manifest.json"
       ]
     },
     canonicalSpecs: rootCanonicalSpecs,
@@ -799,7 +799,7 @@ function sdkComponentSpec({ surface, prefix, title, authority, openapiFile, clie
       generated: true,
       private: false,
       manifests: [
-        ".sdkwork-assembly.json",
+        "sdk-manifest.json",
         "sdk-manifest.json"
       ]
     },
@@ -815,7 +815,7 @@ function sdkComponentSpec({ surface, prefix, title, authority, openapiFile, clie
       },
       publicExports: [],
       runtimeEntrypoints: [
-        ".sdkwork-assembly.json"
+        "sdk-manifest.json"
       ],
       sdkDependencies: dependencies,
       dependencyApiExports: [],
@@ -823,7 +823,7 @@ function sdkComponentSpec({ surface, prefix, title, authority, openapiFile, clie
       sdkClients: [client],
       events: [],
       configKeys: [
-        ".sdkwork-assembly.json",
+        "sdk-manifest.json",
         "sdk-manifest.json"
       ]
     },
@@ -937,13 +937,15 @@ Root standards remain authoritative:
 
 Local authority:
 
-- \`../.sdkwork-assembly.json\`
 - \`../sdk-manifest.json\`
 - \`../openapi/${openapiFile}\`
 `);
-  writeJson(`sdks/${family}/.sdkwork-assembly.json`, sdkFamilyAssembly({ surface, prefix, title, authority, openapiFile, client, dependencies }));
+  const familyManifest = {
+    ...sdkFamilyAssembly({ surface, prefix, title, authority, openapiFile, client, dependencies }),
+    ...sdkManifest({ surface, prefix, authority, openapiFile, dependencies }),
+  };
+  writeJson(`sdks/${family}/sdk-manifest.json`, familyManifest);
   writeJson(`sdks/${family}/specs/component.spec.json`, sdkComponentSpec({ surface, prefix, title, authority, openapiFile, client, dependencies }));
-  writeJson(`sdks/${family}/sdk-manifest.json`, sdkManifest({ surface, prefix, authority, openapiFile, dependencies }));
   writeSdkgenConfig({ surface, prefix, authority, openapiFile });
 }
 
@@ -3055,19 +3057,16 @@ $requiredFiles = @(
     "docs/schema-registry/tables/005-llm-governance.yaml",
     "sdks/README.md",
     "sdks/sdkwork-llm-sdk/README.md",
-    "sdks/sdkwork-llm-sdk/.sdkwork-assembly.json",
     "sdks/sdkwork-llm-sdk/sdk-manifest.json",
     "sdks/sdkwork-llm-sdk/specs/README.md",
     "sdks/sdkwork-llm-sdk/specs/component.spec.json",
     "sdks/sdkwork-llm-sdk/openapi/llm-open-api.openapi.json",
     "sdks/sdkwork-llm-app-sdk/README.md",
-    "sdks/sdkwork-llm-app-sdk/.sdkwork-assembly.json",
     "sdks/sdkwork-llm-app-sdk/sdk-manifest.json",
     "sdks/sdkwork-llm-app-sdk/specs/README.md",
     "sdks/sdkwork-llm-app-sdk/specs/component.spec.json",
     "sdks/sdkwork-llm-app-sdk/openapi/llm-app-api.openapi.json",
     "sdks/sdkwork-llm-backend-sdk/README.md",
-    "sdks/sdkwork-llm-backend-sdk/.sdkwork-assembly.json",
     "sdks/sdkwork-llm-backend-sdk/sdk-manifest.json",
     "sdks/sdkwork-llm-backend-sdk/specs/README.md",
     "sdks/sdkwork-llm-backend-sdk/specs/component.spec.json",
@@ -3126,7 +3125,7 @@ foreach ($family in @(
     @{ Path = "sdks/sdkwork-llm-app-sdk"; Authority = "sdkwork-llm.app"; Prefix = "/app/v3/api"; SchemaUrl = "/app/v3/openapi.json"; Spec = "openapi/llm-app-api.openapi.json"; Client = "SdkworkLlmAppClient" },
     @{ Path = "sdks/sdkwork-llm-backend-sdk"; Authority = "sdkwork-llm.backend"; Prefix = "/backend/v3/api"; SchemaUrl = "/backend/v3/openapi.json"; Spec = "openapi/llm-backend-api.openapi.json"; Client = "SdkworkLlmBackendClient" }
 )) {
-    $assembly = Read-JsonFile (Join-Path $family.Path ".sdkwork-assembly.json")
+    $assembly = Read-JsonFile (Join-Path $family.Path "sdk-manifest.json")
     $manifest = Read-JsonFile (Join-Path $family.Path "sdk-manifest.json")
     $component = Read-JsonFile (Join-Path $family.Path "specs/component.spec.json")
 

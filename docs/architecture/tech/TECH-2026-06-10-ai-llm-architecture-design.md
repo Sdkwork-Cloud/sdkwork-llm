@@ -1815,7 +1815,7 @@ sdkwork-llm/
     sdkwork-llm-backend-api/
   sdks/
     sdkwork-llm-sdk/
-      .sdkwork-assembly.json
+      sdk-manifest.json
       sdk-manifest.json
       specs/component.spec.json
       openapi/
@@ -1825,7 +1825,7 @@ sdkwork-llm/
         generated/server-openapi/
         composed/
     sdkwork-llm-app-sdk/
-      .sdkwork-assembly.json
+      sdk-manifest.json
       sdk-manifest.json
       specs/component.spec.json
       openapi/
@@ -1835,7 +1835,7 @@ sdkwork-llm/
         generated/server-openapi/
         composed/
     sdkwork-llm-backend-sdk/
-      .sdkwork-assembly.json
+      sdk-manifest.json
       sdk-manifest.json
       specs/component.spec.json
       openapi/
