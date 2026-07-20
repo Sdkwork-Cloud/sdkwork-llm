@@ -6,7 +6,7 @@ Unified-process Memory API server manifests for cloud-hosted deployment.
 
 ## Files
 
-- `deployment.yaml` — `sdkwork-llm-standalone-gateway` Deployment with health probes on `/healthz`
+- `deployment.yaml` — `sdkwork-api-llm-standalone-gateway` Deployment with health probes on `/healthz`
 - `service.yaml` — ClusterIP service exposing port 8080
 
 ## Prerequisites

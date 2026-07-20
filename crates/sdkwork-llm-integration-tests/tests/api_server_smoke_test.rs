@@ -11,7 +11,7 @@ async fn api_server_bootstrap_auth_and_healthz_contracts() {
     std::env::set_var("SDKWORK_LLM_ENVIRONMENT", "development");
     std::env::set_var("SDKWORK_LLM_DEV_AUTH_BYPASS", "true");
     std::env::set_var("SDKWORK_LLM_DATABASE_URL", "sqlite::memory:");
-    let dev_app = sdkwork_llm_standalone_gateway::build_router()
+    let dev_app = sdkwork_api_llm_standalone_gateway::build_router()
         .await
         .expect("standalone-gateway bootstrap should succeed with in-memory sqlite");
 
@@ -33,7 +33,7 @@ async fn api_server_bootstrap_auth_and_healthz_contracts() {
     std::env::remove_var("SDKWORK_IAM_DATABASE_URL");
     std::env::set_var("SDKWORK_LLM_DATABASE_URL", "sqlite::memory:");
 
-    let production_app = sdkwork_llm_standalone_gateway::build_router()
+    let production_app = sdkwork_api_llm_standalone_gateway::build_router()
         .await
         .expect("standalone-gateway bootstrap should succeed with in-memory sqlite");
 

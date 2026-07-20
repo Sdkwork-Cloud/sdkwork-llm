@@ -1,14 +1,14 @@
 [package]
-name = "sdkwork-llm-standalone-gateway"
+name = "sdkwork-api-llm-standalone-gateway"
 version.workspace = true
 edition.workspace = true
 
 [[bin]]
-name = "sdkwork-llm-standalone-gateway"
+name = "sdkwork-api-llm-standalone-gateway"
 path = "src/main.rs"
 
 [dependencies]
-sdkwork_llm_gateway_assembly = { package = "sdkwork-llm-gateway-assembly", path = "../sdkwork-llm-gateway-assembly" }
+sdkwork_api_llm_assembly = { package = "sdkwork-api-llm-assembly", path = "../sdkwork-api-llm-assembly" }
 axum.workspace = true
 tokio.workspace = true
 tracing.workspace = true

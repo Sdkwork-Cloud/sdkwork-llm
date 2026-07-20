@@ -12,6 +12,8 @@ path = "src/lib.rs"
 [dependencies]
 axum.workspace = true
 tokio.workspace = true
+sdkwork-intelligence-llm-repository-sqlx.workspace = true
+sdkwork-intelligence-llm-service.workspace = true
 sdkwork-routes-llm-app-api.workspace = true
 sdkwork-routes-llm-backend-api.workspace = true
 sdkwork-routes-llm-open-api.workspace = true

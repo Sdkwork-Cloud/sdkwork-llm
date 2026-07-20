@@ -1,4 +1,4 @@
-use sdkwork_llm_standalone_gateway::build_router;
+use sdkwork_api_llm_standalone_gateway::build_router;
 
 #[tokio::main]
 async fn main() {
@@ -17,7 +17,7 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind(&bind_address)
         .await
         .expect("bind llm standalone-gateway listener failed");
-    tracing::info!("sdkwork-llm-standalone-gateway listening on {bind_address}");
+    tracing::info!("sdkwork-api-llm-standalone-gateway listening on {bind_address}");
     axum::serve(listener, app)
         .await
         .expect("serve llm standalone-gateway failed");

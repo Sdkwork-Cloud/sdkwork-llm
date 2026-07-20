@@ -43,7 +43,7 @@ console.log(
   `Starting SDKWork LLM dev server (${values.target}, ${values.database}, ${values["deployment-profile"]}, ${values["service-layout"]}, profile=${profileId})`,
 );
 
-const child = spawn("cargo", ["run", "-p", "sdkwork-llm-standalone-gateway"], {
+const child = spawn("cargo", ["run", "-p", "sdkwork-api-llm-standalone-gateway"], {
   cwd: REPO_ROOT,
   stdio: "inherit",
   shell: true,

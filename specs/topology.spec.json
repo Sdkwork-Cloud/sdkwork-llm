@@ -108,16 +108,16 @@
   },
   "components": {
     "appApiRouter": {
-      "crate": "sdkwork-llm-standalone-gateway",
-      "binary": "sdkwork-llm-standalone-gateway"
+      "crate": "sdkwork-api-llm-standalone-gateway",
+      "binary": "sdkwork-api-llm-standalone-gateway"
     },
     "backendApiRouter": {
-      "crate": "sdkwork-llm-standalone-gateway",
-      "binary": "sdkwork-llm-standalone-gateway"
+      "crate": "sdkwork-api-llm-standalone-gateway",
+      "binary": "sdkwork-api-llm-standalone-gateway"
     },
     "openApiRouter": {
-      "crate": "sdkwork-llm-standalone-gateway",
-      "binary": "sdkwork-llm-standalone-gateway"
+      "crate": "sdkwork-api-llm-standalone-gateway",
+      "binary": "sdkwork-api-llm-standalone-gateway"
     }
   },
   "orchestration": {
@@ -126,8 +126,8 @@
         "processes": [
           {
             "id": "application.public-ingress",
-            "crate": "sdkwork-llm-standalone-gateway",
-            "binary": "sdkwork-llm-standalone-gateway",
+            "crate": "sdkwork-api-llm-standalone-gateway",
+            "binary": "sdkwork-api-llm-standalone-gateway",
             "required": true,
             "role": "api-standalone-gateway"
           }
@@ -140,8 +140,8 @@
         "processes": [
           {
             "id": "application.public-ingress",
-            "crate": "sdkwork-llm-standalone-gateway",
-            "binary": "sdkwork-llm-standalone-gateway",
+            "crate": "sdkwork-api-llm-standalone-gateway",
+            "binary": "sdkwork-api-llm-standalone-gateway",
             "required": true,
             "role": "api-standalone-gateway"
           }
@@ -161,8 +161,8 @@
         "processes": [
           {
             "id": "application.public-ingress",
-            "crate": "sdkwork-llm-standalone-gateway",
-            "binary": "sdkwork-llm-standalone-gateway",
+            "crate": "sdkwork-api-llm-standalone-gateway",
+            "binary": "sdkwork-api-llm-standalone-gateway",
             "required": true,
             "role": "api-standalone-gateway"
           }
