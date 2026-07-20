@@ -1,0 +1,17 @@
+[package]
+name = "sdkwork-api-llm-assembly"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+description = "Generated API assembly for sdkwork-llm application HTTP plane."
+
+[lib]
+name = "sdkwork_api_llm_assembly"
+path = "src/lib.rs"
+
+[dependencies]
+axum.workspace = true
+tokio.workspace = true
+sdkwork-routes-llm-app-api.workspace = true
+sdkwork-routes-llm-backend-api.workspace = true
+sdkwork-routes-llm-open-api.workspace = true

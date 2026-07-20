@@ -1,0 +1,43 @@
+{
+  "kind": "sdkwork.api.assembly",
+  "schemaVersion": 1,
+  "applicationCode": "llm",
+  "apiMode": "served",
+  "packageName": "sdkwork-api-llm-assembly",
+  "crateDir": "crates/sdkwork-api-llm-assembly",
+  "routeCrates": [
+    {
+      "packageName": "sdkwork-routes-llm-app-api",
+      "memberDir": "crates/sdkwork-routes-llm-app-api",
+      "libName": "sdkwork_routes_llm_app_api",
+      "surface": "app-api",
+      "pathPrefix": null,
+      "mountOrder": 0,
+      "componentRef": "crates/sdkwork-routes-llm-app-api/specs/component.spec.json",
+      "routeManifestRef": "crates/sdkwork-routes-llm-app-api/sdks/_route-manifests/app-api/sdkwork-routes-llm-app-api.route-manifest.json",
+      "sourceRef": "crates/sdkwork-routes-llm-app-api/Cargo.toml"
+    },
+    {
+      "packageName": "sdkwork-routes-llm-backend-api",
+      "memberDir": "crates/sdkwork-routes-llm-backend-api",
+      "libName": "sdkwork_routes_llm_backend_api",
+      "surface": "backend-api",
+      "pathPrefix": null,
+      "mountOrder": 1,
+      "componentRef": "crates/sdkwork-routes-llm-backend-api/specs/component.spec.json",
+      "routeManifestRef": "crates/sdkwork-routes-llm-backend-api/sdks/_route-manifests/backend-api/sdkwork-routes-llm-backend-api.route-manifest.json",
+      "sourceRef": "crates/sdkwork-routes-llm-backend-api/Cargo.toml"
+    },
+    {
+      "packageName": "sdkwork-routes-llm-open-api",
+      "memberDir": "crates/sdkwork-routes-llm-open-api",
+      "libName": "sdkwork_routes_llm_open_api",
+      "surface": "open-api",
+      "pathPrefix": null,
+      "mountOrder": 2,
+      "componentRef": "crates/sdkwork-routes-llm-open-api/specs/component.spec.json",
+      "routeManifestRef": "crates/sdkwork-routes-llm-open-api/sdks/_route-manifests/open-api/sdkwork-routes-llm-open-api.route-manifest.json",
+      "sourceRef": "crates/sdkwork-routes-llm-open-api/Cargo.toml"
+    }
+  ]
+}
