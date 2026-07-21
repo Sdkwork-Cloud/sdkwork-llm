@@ -1,57 +1,57 @@
-{
-  "name": "sdkwork-llm-workspace",
-  "private": true,
-  "license": "UNLICENSED",
-  "type": "module",
-  "packageManager": "pnpm@10.33.0",
-  "dependencies": {
-    "@sdkwork/app-topology": "workspace:*"
-  },
-  "scripts": {
-    "stop": "pnpm exec sdkwork-app stop",
-    "dev": "pnpm dev:standalone",
-    "build": "pnpm exec sdkwork-app build",
-    "test": "pnpm exec sdkwork-app test",
-    "check": "pnpm exec sdkwork-app check",
-    "check:architecture-alignment": "node tools/check_sdkwork_llm_architecture_alignment.mjs",
-    "check:pnpm-script-standard": "node ../sdkwork-specs/tools/check-pnpm-script-standard.mjs --root . --product-prefix llm",
-    "check:agent-workflow-standard": "node ../sdkwork-specs/tools/check-agent-workflow-standard.mjs --root .",
-    "verify": "pnpm exec sdkwork-app verify",
-    "clean": "pnpm exec sdkwork-app clean",
-    "api:materialize": "node tools/materialize_phase1_contracts.mjs && pnpm api:materialize:envelope",
-    "api:materialize:envelope": "node ../sdkwork-specs/tools/align-openapi-response-envelope.mjs --file apis/open-api/llm-open-api.openapi.json && node ../sdkwork-specs/tools/align-openapi-response-envelope.mjs --file apis/app-api/llm-app-api.openapi.json && node ../sdkwork-specs/tools/align-openapi-response-envelope.mjs --file apis/backend-api/llm-backend-api.openapi.json && node ../sdkwork-specs/tools/align-openapi-response-envelope.mjs --file sdks/sdkwork-llm-sdk/openapi/llm-open-api.openapi.json && node ../sdkwork-specs/tools/align-openapi-response-envelope.mjs --file sdks/sdkwork-llm-app-sdk/openapi/llm-app-api.openapi.json && node ../sdkwork-specs/tools/align-openapi-response-envelope.mjs --file sdks/sdkwork-llm-backend-sdk/openapi/llm-backend-api.openapi.json",
-    "api:check": "powershell -ExecutionPolicy Bypass -File tools/verify_phase1.ps1",
-    "sdk:generate:ts": "powershell -NoProfile -ExecutionPolicy Bypass -File sdks/sdkwork-llm-sdk/bin/generate-sdk.ps1 -Languages typescript && powershell -NoProfile -ExecutionPolicy Bypass -File sdks/sdkwork-llm-app-sdk/bin/generate-sdk.ps1 -Languages typescript && powershell -NoProfile -ExecutionPolicy Bypass -File sdks/sdkwork-llm-backend-sdk/bin/generate-sdk.ps1 -Languages typescript",
-    "sdk:generate": "node sdks/standardize-llm-sdk-family.mjs && pnpm api:materialize:envelope && node scripts/generate-llm-sdk.mjs",
-    "db:materialize:contract": "node ../sdkwork-specs/tools/materialize-database-contract-from-baseline.mjs --root . --baseline database/ddl/baseline/postgres/0001_llm_baseline.sql --module-id llm --owner llm-platform --prefixes llm_ --engines postgres,sqlite",
-    "db:validate": "node ../sdkwork-specs/tools/check-database-framework-standard.mjs --root .",
-    "topology:validate": "node ../sdkwork-app-topology/scripts/sdkwork-topology.mjs validate --root . --spec specs/topology.spec.json",
-    "db:plan": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . plan",
-    "db:init": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . init",
-    "db:migrate": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . migrate",
-    "db:seed": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . seed",
-    "db:status": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . status",
-    "db:drift": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . drift",
-    "db:drift:check": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . drift-check",
-    "db:bootstrap": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . bootstrap",
-    "test:contract:database": "node ../sdkwork-specs/tools/check-database-framework-standard.mjs --root .",
-    "topology:plan": "node ../sdkwork-app-topology/scripts/sdkwork-topology.mjs plan --root . --spec specs/topology.spec.json",
-    "api:assembly:materialize": "node ../sdkwork-specs/tools/materialize-api-assembly.mjs --root .",
-    "api:assembly:validate": "node ../sdkwork-specs/tools/validate-api-assembly.mjs --root .",
-    "check:app-composition": "node ../sdkwork-specs/tools/verify-repo.mjs --root .",
-    "_sdkwork:build": "cargo build --workspace --release",
-    "_sdkwork:test": "cargo test --workspace && node --test tests/contracts/route_manifest_openapi_parity_test.mjs && node --test tests/contracts/openapi_phase1_contract_test.mjs && node --test tests/contracts/schema_registry_phase1_contract_test.mjs && node --test tests/contract/database-framework.contract.test.mjs && node --test sdks/test/verify-sdk-ownership-boundaries.test.mjs",
-    "_sdkwork:check": "pnpm run check:app-composition && pnpm check:architecture-alignment && pnpm check:pnpm-script-standard && pnpm check:agent-workflow-standard && pnpm topology:validate && pnpm db:validate",
-    "_sdkwork:verify": "node tools/materialize_phase1_contracts.mjs && node sdks/standardize-llm-sdk-family.mjs && powershell -ExecutionPolicy Bypass -File tools/verify_phase1.ps1 && powershell -ExecutionPolicy Bypass -File tools/verify_sdkwork_structure.ps1 && powershell -ExecutionPolicy Bypass -File tools/verify_openapi_operation_ids.ps1 && cargo test --workspace && node --test tests/contracts/route_manifest_openapi_parity_test.mjs && node --test tests/contracts/openapi_phase1_contract_test.mjs && node --test tests/contracts/schema_registry_phase1_contract_test.mjs && node --test tests/contract/database-framework.contract.test.mjs && node --test sdks/test/verify-sdk-ownership-boundaries.test.mjs && pnpm check && node tools/check_sdkwork_llm_architecture_alignment.mjs && pnpm run check:app-composition",
-    "_sdkwork:clean": "cargo clean",
-    "dev:standalone": "pnpm exec sdkwork-app dev --deployment-profile standalone",
-    "dev:cloud": "pnpm exec sdkwork-app dev --deployment-profile cloud"
-  },
-  "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
-    }
-  }
+﻿{
+    "name":  "sdkwork-llm-workspace",
+    "private":  true,
+    "license": "AGPL-3.0-or-later",
+    "type":  "module",
+    "packageManager":  "pnpm@10.33.0",
+    "dependencies":  {
+                         "@sdkwork/app-topology":  "workspace:*"
+                     },
+    "scripts":  {
+                    "stop":  "pnpm exec sdkwork-app stop",
+                    "dev":  "pnpm dev:standalone",
+                    "build":  "pnpm exec sdkwork-app build",
+                    "test":  "pnpm exec sdkwork-app test",
+                    "check":  "pnpm exec sdkwork-app check",
+                    "check:architecture-alignment":  "node tools/check_sdkwork_llm_architecture_alignment.mjs",
+                    "check:pnpm-script-standard":  "node ../sdkwork-specs/tools/check-pnpm-script-standard.mjs --root . --product-prefix llm",
+                    "check:agent-workflow-standard":  "node ../sdkwork-specs/tools/check-agent-workflow-standard.mjs --root .",
+                    "verify":  "pnpm exec sdkwork-app verify",
+                    "clean":  "pnpm exec sdkwork-app clean",
+                    "api:materialize":  "node tools/materialize_phase1_contracts.mjs \u0026\u0026 pnpm api:materialize:envelope",
+                    "api:materialize:envelope":  "node ../sdkwork-specs/tools/align-openapi-response-envelope.mjs --file apis/open-api/llm-open-api.openapi.json \u0026\u0026 node ../sdkwork-specs/tools/align-openapi-response-envelope.mjs --file apis/app-api/llm-app-api.openapi.json \u0026\u0026 node ../sdkwork-specs/tools/align-openapi-response-envelope.mjs --file apis/backend-api/llm-backend-api.openapi.json \u0026\u0026 node ../sdkwork-specs/tools/align-openapi-response-envelope.mjs --file sdks/sdkwork-llm-sdk/openapi/llm-open-api.openapi.json \u0026\u0026 node ../sdkwork-specs/tools/align-openapi-response-envelope.mjs --file sdks/sdkwork-llm-app-sdk/openapi/llm-app-api.openapi.json \u0026\u0026 node ../sdkwork-specs/tools/align-openapi-response-envelope.mjs --file sdks/sdkwork-llm-backend-sdk/openapi/llm-backend-api.openapi.json",
+                    "api:check":  "powershell -ExecutionPolicy Bypass -File tools/verify_phase1.ps1",
+                    "sdk:generate:ts":  "powershell -NoProfile -ExecutionPolicy Bypass -File sdks/sdkwork-llm-sdk/bin/generate-sdk.ps1 -Languages typescript \u0026\u0026 powershell -NoProfile -ExecutionPolicy Bypass -File sdks/sdkwork-llm-app-sdk/bin/generate-sdk.ps1 -Languages typescript \u0026\u0026 powershell -NoProfile -ExecutionPolicy Bypass -File sdks/sdkwork-llm-backend-sdk/bin/generate-sdk.ps1 -Languages typescript",
+                    "sdk:generate":  "node sdks/standardize-llm-sdk-family.mjs \u0026\u0026 pnpm api:materialize:envelope \u0026\u0026 node scripts/generate-llm-sdk.mjs",
+                    "db:materialize:contract":  "node ../sdkwork-specs/tools/materialize-database-contract-from-baseline.mjs --root . --baseline database/ddl/baseline/postgres/0001_llm_baseline.sql --module-id llm --owner llm-platform --prefixes llm_ --engines postgres,sqlite",
+                    "db:validate":  "node ../sdkwork-specs/tools/check-database-framework-standard.mjs --root .",
+                    "topology:validate":  "node ../sdkwork-app-topology/scripts/sdkwork-topology.mjs validate --root . --spec specs/topology.spec.json",
+                    "db:plan":  "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . plan",
+                    "db:init":  "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . init",
+                    "db:migrate":  "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . migrate",
+                    "db:seed":  "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . seed",
+                    "db:status":  "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . status",
+                    "db:drift":  "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . drift",
+                    "db:drift:check":  "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . drift-check",
+                    "db:bootstrap":  "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . bootstrap",
+                    "test:contract:database":  "node ../sdkwork-specs/tools/check-database-framework-standard.mjs --root .",
+                    "topology:plan":  "node ../sdkwork-app-topology/scripts/sdkwork-topology.mjs plan --root . --spec specs/topology.spec.json",
+                    "api:assembly:materialize":  "node ../sdkwork-specs/tools/materialize-api-assembly.mjs --root .",
+                    "api:assembly:validate":  "node ../sdkwork-specs/tools/validate-api-assembly.mjs --root .",
+                    "check:app-composition":  "node ../sdkwork-specs/tools/verify-repo.mjs --root .",
+                    "_sdkwork:build":  "cargo build --workspace --release",
+                    "_sdkwork:test":  "cargo test --workspace \u0026\u0026 node --test tests/contracts/route_manifest_openapi_parity_test.mjs \u0026\u0026 node --test tests/contracts/openapi_phase1_contract_test.mjs \u0026\u0026 node --test tests/contracts/schema_registry_phase1_contract_test.mjs \u0026\u0026 node --test tests/contract/database-framework.contract.test.mjs \u0026\u0026 node --test sdks/test/verify-sdk-ownership-boundaries.test.mjs",
+                    "_sdkwork:check":  "pnpm run check:app-composition \u0026\u0026 pnpm check:architecture-alignment \u0026\u0026 pnpm check:pnpm-script-standard \u0026\u0026 pnpm check:agent-workflow-standard \u0026\u0026 pnpm topology:validate \u0026\u0026 pnpm db:validate",
+                    "_sdkwork:verify":  "node tools/materialize_phase1_contracts.mjs \u0026\u0026 node sdks/standardize-llm-sdk-family.mjs \u0026\u0026 powershell -ExecutionPolicy Bypass -File tools/verify_phase1.ps1 \u0026\u0026 powershell -ExecutionPolicy Bypass -File tools/verify_sdkwork_structure.ps1 \u0026\u0026 powershell -ExecutionPolicy Bypass -File tools/verify_openapi_operation_ids.ps1 \u0026\u0026 cargo test --workspace \u0026\u0026 node --test tests/contracts/route_manifest_openapi_parity_test.mjs \u0026\u0026 node --test tests/contracts/openapi_phase1_contract_test.mjs \u0026\u0026 node --test tests/contracts/schema_registry_phase1_contract_test.mjs \u0026\u0026 node --test tests/contract/database-framework.contract.test.mjs \u0026\u0026 node --test sdks/test/verify-sdk-ownership-boundaries.test.mjs \u0026\u0026 pnpm check \u0026\u0026 node tools/check_sdkwork_llm_architecture_alignment.mjs \u0026\u0026 pnpm run check:app-composition",
+                    "_sdkwork:clean":  "cargo clean",
+                    "dev:standalone":  "pnpm exec sdkwork-app dev --deployment-profile standalone",
+                    "dev:cloud":  "pnpm exec sdkwork-app dev --deployment-profile cloud"
+                },
+    "exports":  {
+                    ".":  {
+                              "types":  "./src/index.ts",
+                              "import":  "./src/index.ts",
+                              "default":  "./src/index.ts"
+                          }
+                }
 }
