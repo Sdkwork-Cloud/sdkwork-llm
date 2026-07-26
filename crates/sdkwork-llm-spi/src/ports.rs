@@ -410,10 +410,7 @@ pub struct LlmEvalRunResult {
 pub trait LlmRecordStorePort: Send + Sync {
     async fn create(&self, command: CreateLlmRecordCommand) -> LlmSpiResult<LlmRecord>;
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmRecordQuery,
-    ) -> LlmSpiResult<Option<LlmRecord>>;
+    async fn retrieve(&self, query: RetrieveLlmRecordQuery) -> LlmSpiResult<Option<LlmRecord>>;
 
     async fn mark_deleted(
         &self,
@@ -425,34 +422,22 @@ pub trait LlmRecordStorePort: Send + Sync {
 pub trait LlmEventStorePort: Send + Sync {
     async fn append(&self, command: AppendLlmEventCommand) -> LlmSpiResult<LlmEvent>;
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmEventQuery,
-    ) -> LlmSpiResult<Option<LlmEvent>>;
+    async fn retrieve(&self, query: RetrieveLlmEventQuery) -> LlmSpiResult<Option<LlmEvent>>;
 }
 
 #[async_trait]
 pub trait LlmAuditStorePort: Send + Sync {
-    async fn append(&self, command: AppendLlmAuditCommand)
-        -> LlmSpiResult<LlmAuditRecord>;
+    async fn append(&self, command: AppendLlmAuditCommand) -> LlmSpiResult<LlmAuditRecord>;
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmAuditQuery,
-    ) -> LlmSpiResult<Option<LlmAuditRecord>>;
+    async fn retrieve(&self, query: RetrieveLlmAuditQuery) -> LlmSpiResult<Option<LlmAuditRecord>>;
 }
 
 #[async_trait]
 pub trait LlmOutboxStorePort: Send + Sync {
-    async fn append(
-        &self,
-        command: AppendLlmOutboxCommand,
-    ) -> LlmSpiResult<LlmOutboxEvent>;
+    async fn append(&self, command: AppendLlmOutboxCommand) -> LlmSpiResult<LlmOutboxEvent>;
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmOutboxQuery,
-    ) -> LlmSpiResult<Option<LlmOutboxEvent>>;
+    async fn retrieve(&self, query: RetrieveLlmOutboxQuery)
+        -> LlmSpiResult<Option<LlmOutboxEvent>>;
 
     async fn list_pending(
         &self,
@@ -472,10 +457,7 @@ pub trait LlmOutboxStorePort: Send + Sync {
 
 #[async_trait]
 pub trait LlmCandidateStorePort: Send + Sync {
-    async fn create(
-        &self,
-        command: CreateLlmCandidateCommand,
-    ) -> LlmSpiResult<LlmCandidate>;
+    async fn create(&self, command: CreateLlmCandidateCommand) -> LlmSpiResult<LlmCandidate>;
 
     async fn retrieve(
         &self,
@@ -497,18 +479,11 @@ pub trait LlmCandidateStorePort: Send + Sync {
 pub trait LlmHabitStorePort: Send + Sync {
     async fn upsert(&self, command: UpsertLlmHabitCommand) -> LlmSpiResult<LlmHabit>;
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmHabitQuery,
-    ) -> LlmSpiResult<Option<LlmHabit>>;
+    async fn retrieve(&self, query: RetrieveLlmHabitQuery) -> LlmSpiResult<Option<LlmHabit>>;
 
-    async fn promote(
-        &self,
-        command: PromoteLlmHabitCommand,
-    ) -> LlmSpiResult<Option<LlmHabit>>;
+    async fn promote(&self, command: PromoteLlmHabitCommand) -> LlmSpiResult<Option<LlmHabit>>;
 
-    async fn decay(&self, command: DecayLlmHabitCommand)
-        -> LlmSpiResult<Option<LlmHabit>>;
+    async fn decay(&self, command: DecayLlmHabitCommand) -> LlmSpiResult<Option<LlmHabit>>;
 }
 
 #[async_trait]

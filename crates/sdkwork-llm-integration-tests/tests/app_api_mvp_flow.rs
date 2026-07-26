@@ -2,7 +2,7 @@ use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
 use sdkwork_intelligence_llm_service::OpenLlmService;
-use sdkwork_llm_plugin_native_sql::NativeSqlLlmStore;
+use sdkwork_llm_plugin_native_sql::{LlmSqlDialect, NativeSqlLlmStore};
 use sdkwork_llm_spi::{LlmHabitStorePort, LlmScopeContext, UpsertLlmHabitCommand};
 use sdkwork_routes_llm_app_api::{
     build_router_with_app_api, wrap_router_with_iam_database_web_framework,
@@ -197,7 +197,7 @@ async fn app_api_memory_sources_list_returns_linked_event_sources() {
     let memory_json: serde_json::Value = serde_json::from_slice(&memory_body).unwrap();
     let record_id = memory_json["recordId"].as_str().unwrap();
 
-    let seed_store = NativeSqlLlmStore::from_sqlite_pool(pool).await.unwrap();
+    let seed_store = NativeSqlLlmStore::from_any_pool(pool, LlmSqlDialect::Sqlite).await;
     let scope = LlmScopeContext::for_test(100_001, space_id.parse().unwrap());
     seed_store
         .append_open_api_event(
@@ -261,7 +261,7 @@ async fn app_api_candidate_approve_promotes_memory_and_links_event_sources() {
     let space_json: serde_json::Value = serde_json::from_slice(&space_body).unwrap();
     let space_id = space_json["spaceId"].as_str().unwrap();
 
-    let seed_store = NativeSqlLlmStore::from_sqlite_pool(pool).await.unwrap();
+    let seed_store = NativeSqlLlmStore::from_any_pool(pool, LlmSqlDialect::Sqlite).await;
     let scope = LlmScopeContext::for_test(100_001, space_id.parse().unwrap());
     seed_store
         .append_open_api_event(

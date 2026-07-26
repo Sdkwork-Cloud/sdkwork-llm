@@ -1,5 +1,5 @@
 use sdkwork_llm_spi::{
-    LlmImplementationKind, LlmPluginManifest, MemoryPluginRegistry, LlmSpiError,
+    LlmImplementationKind, LlmPluginManifest, LlmSpiError, MemoryPluginRegistry,
 };
 
 #[test]

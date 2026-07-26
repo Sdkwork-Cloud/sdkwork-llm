@@ -1,4 +1,4 @@
-use sdkwork_llm_contract::{LlmRecord, LlmRetrievalHit, LlmRecordType};
+use sdkwork_llm_contract::{LlmRecord, LlmRecordType, LlmRetrievalHit};
 use sdkwork_llm_core::{build_context_pack_from_hits, estimate_tokens};
 
 fn sample_hit(text: &str) -> LlmRetrievalHit {

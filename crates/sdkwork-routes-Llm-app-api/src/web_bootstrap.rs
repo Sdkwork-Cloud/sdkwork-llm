@@ -34,9 +34,7 @@ impl DomainContextInjector for LlmAppContextInjector {
     }
 }
 
-fn llm_app_context_from_web_request(
-    context: &WebRequestContext,
-) -> Option<LlmAppRequestContext> {
+fn llm_app_context_from_web_request(context: &WebRequestContext) -> Option<LlmAppRequestContext> {
     let principal = context.principal.as_ref()?;
     let tenant_id = principal.tenant_id().parse().ok()?;
     let actor_id = principal.user_id().parse().ok();

@@ -1,20 +1,20 @@
 use sdkwork_llm_plugin_native_sql::{
     build_native_sql_candidate_store, build_native_sql_habit_store,
-    build_native_sql_retrieval_trace_store, NativeSqlAppendOutboxEventCommand,
-    NativeSqlLlmStore, NativeSqlStoreError,
+    build_native_sql_retrieval_trace_store, NativeSqlAppendOutboxEventCommand, NativeSqlLlmStore,
+    NativeSqlStoreError,
 };
 use sdkwork_llm_spi::{
     AppendLlmAuditCommand, AppendLlmEventCommand, AppendLlmOutboxCommand,
     AppendLlmRetrievalTraceCommand, ApproveLlmCandidateCommand, CreateLlmCandidateCommand,
     CreateLlmRecordCommand, DecayLlmHabitCommand, DeleteLlmRecordCommand,
-    ListLlmRetrievalTracesQuery, ListPendingLlmOutboxQuery, MarkLlmOutboxFailedCommand,
-    MarkLlmOutboxPublishedCommand, LlmAuditStorePort, LlmCandidateStorePort,
-    LlmContextPackSnapshot, LlmEventStorePort, LlmHabitStorePort, LlmOutboxStorePort,
-    LlmRecordStorePort, LlmRetrievalHitDraft, LlmRetrievalTraceStorePort,
-    LlmScopeContext, LlmSpiError, PromoteLlmHabitCommand, RejectLlmCandidateCommand,
-    RetrieveLlmAuditQuery, RetrieveLlmCandidateQuery, RetrieveLlmEventQuery,
-    RetrieveLlmHabitQuery, RetrieveLlmOutboxQuery, RetrieveLlmRecordQuery,
-    RetrieveLlmRetrievalTraceQuery, UpsertLlmHabitCommand,
+    ListLlmRetrievalTracesQuery, ListPendingLlmOutboxQuery, LlmAuditStorePort,
+    LlmCandidateStorePort, LlmContextPackSnapshot, LlmEventStorePort, LlmHabitStorePort,
+    LlmOutboxStorePort, LlmRecordStorePort, LlmRetrievalHitDraft, LlmRetrievalTraceStorePort,
+    LlmScopeContext, LlmSpiError, MarkLlmOutboxFailedCommand, MarkLlmOutboxPublishedCommand,
+    PromoteLlmHabitCommand, RejectLlmCandidateCommand, RetrieveLlmAuditQuery,
+    RetrieveLlmCandidateQuery, RetrieveLlmEventQuery, RetrieveLlmHabitQuery,
+    RetrieveLlmOutboxQuery, RetrieveLlmRecordQuery, RetrieveLlmRetrievalTraceQuery,
+    UpsertLlmHabitCommand,
 };
 
 fn assert_utc_timestamp(value: Option<&str>) {
@@ -41,10 +41,7 @@ fn outbox_command<'a>(
     }
 }
 
-fn candidate_command(
-    scope: LlmScopeContext,
-    candidate_id: &str,
-) -> CreateLlmCandidateCommand {
+fn candidate_command(scope: LlmScopeContext, candidate_id: &str) -> CreateLlmCandidateCommand {
     CreateLlmCandidateCommand {
         scope,
         candidate_id: candidate_id.to_string(),
@@ -57,11 +54,7 @@ fn candidate_command(
     }
 }
 
-fn habit_command(
-    scope: LlmScopeContext,
-    habit_id: &str,
-    user_id: i64,
-) -> UpsertLlmHabitCommand {
+fn habit_command(scope: LlmScopeContext, habit_id: &str, user_id: i64) -> UpsertLlmHabitCommand {
     UpsertLlmHabitCommand {
         scope,
         habit_id: habit_id.to_string(),
@@ -1071,18 +1064,14 @@ async fn sqlite_store_creates_and_decides_candidates_by_tenant_and_space_scope()
     let tenant_two = LlmScopeContext::for_test(100_002, 2);
     let wrong_space = LlmScopeContext::for_test(100_001, 2);
 
-    let tenant_one_candidate = LlmCandidateStorePort::create(
-        &store,
-        candidate_command(tenant_one.clone(), "cand-shared"),
-    )
-    .await
-    .unwrap();
-    let tenant_two_candidate = LlmCandidateStorePort::create(
-        &store,
-        candidate_command(tenant_two.clone(), "cand-shared"),
-    )
-    .await
-    .unwrap();
+    let tenant_one_candidate =
+        LlmCandidateStorePort::create(&store, candidate_command(tenant_one.clone(), "cand-shared"))
+            .await
+            .unwrap();
+    let tenant_two_candidate =
+        LlmCandidateStorePort::create(&store, candidate_command(tenant_two.clone(), "cand-shared"))
+            .await
+            .unwrap();
 
     let approved = LlmCandidateStorePort::approve(
         &store,

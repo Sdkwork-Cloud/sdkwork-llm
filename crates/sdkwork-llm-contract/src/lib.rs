@@ -11,8 +11,7 @@ pub use app_ports::{LlmAppApi, LlmAppRequestContext};
 pub use backend_ports::{LlmBackendApi, LlmBackendRequestContext};
 pub use dto::*;
 pub use ports::{
-    LlmOpenApi, LlmOpenApiRequestContext, LlmServiceError, LlmServiceErrorKind,
-    LlmServiceResult,
+    LlmOpenApi, LlmOpenApiRequestContext, LlmServiceError, LlmServiceErrorKind, LlmServiceResult,
 };
 pub use problem::ProblemDetails;
 pub use runtime_env::{

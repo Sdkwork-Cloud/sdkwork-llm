@@ -1,11 +1,10 @@
 use async_trait::async_trait;
 
 use crate::dto::{
-    ListLlmCandidatesQuery, ListLlmRecordsQuery, LlmCandidate, LlmCandidateList,
-    LlmCapabilities, LlmContextPack, LlmContextPackRequest, LlmEvent,
-    LlmEventRequest, LlmExtractionRequest, MemoryFeedback, LlmFeedbackRequest,
-    LlmLearningJob, LlmProviderHealth, LlmRecord, LlmRecordList, LlmRecordPatch,
-    LlmRecordRequest, LlmRetrievalRequest, LlmRetrievalResult,
+    ListLlmCandidatesQuery, ListLlmRecordsQuery, LlmCandidate, LlmCandidateList, LlmCapabilities,
+    LlmContextPack, LlmContextPackRequest, LlmEvent, LlmEventRequest, LlmExtractionRequest,
+    LlmFeedbackRequest, LlmLearningJob, LlmProviderHealth, LlmRecord, LlmRecordList,
+    LlmRecordPatch, LlmRecordRequest, LlmRetrievalRequest, LlmRetrievalResult, MemoryFeedback,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -209,8 +208,6 @@ pub trait LlmOpenApi: Send + Sync + 'static {
         &self,
         _context: LlmOpenApiRequestContext,
     ) -> LlmServiceResult<LlmProviderHealth> {
-        Err(LlmServiceError::not_implemented(
-            "providerHealth.retrieve",
-        ))
+        Err(LlmServiceError::not_implemented("providerHealth.retrieve"))
     }
 }

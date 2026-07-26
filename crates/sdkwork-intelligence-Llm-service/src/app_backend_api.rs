@@ -1,23 +1,22 @@
 use async_trait::async_trait;
 use sdkwork_llm_contract::ListSpacesQuery;
 use sdkwork_llm_contract::{
-    ListAuditLogsQuery, ListLlmCandidatesQuery, ListEventsQuery, ListHabitsQuery, ListLlmRecordsQuery,
-    ListRetrievalTracesQuery, LlmAppApi, LlmAppRequestContext, LlmBackendApi,
-    LlmBackendRequestContext, LlmCandidate, LlmCandidateList, LlmEventList,
-    LlmExportJob, LlmExportRequest, LlmExtractionRequest, LlmForgetJob,
-    LlmForgetRequest, LlmHabit, LlmHabitList, LlmHabitRequest, LlmLearningJob,
-    LlmLearningSettings, LlmLearningSettingsPatch, LlmOpenApi, LlmPageInfo,
-    LlmProviderHealth, LlmRecordList, LlmRecordSource, LlmRecordSourceList,
-    LlmRetrievalTrace, LlmRetrievalTraceList, LlmReviewRequest, LlmServiceError,
-    LlmServiceResult, LlmSpace, LlmSpaceList, LlmSpaceRequest,
+    ListAuditLogsQuery, ListEventsQuery, ListHabitsQuery, ListLlmCandidatesQuery,
+    ListLlmRecordsQuery, ListRetrievalTracesQuery, LlmAppApi, LlmAppRequestContext, LlmBackendApi,
+    LlmBackendRequestContext, LlmCandidate, LlmCandidateList, LlmEventList, LlmExportJob,
+    LlmExportRequest, LlmExtractionRequest, LlmForgetJob, LlmForgetRequest, LlmHabit, LlmHabitList,
+    LlmHabitRequest, LlmLearningJob, LlmLearningSettings, LlmLearningSettingsPatch, LlmOpenApi,
+    LlmPageInfo, LlmProviderHealth, LlmRecordList, LlmRecordSource, LlmRecordSourceList,
+    LlmRetrievalTrace, LlmRetrievalTraceList, LlmReviewRequest, LlmServiceError, LlmServiceResult,
+    LlmSpace, LlmSpaceList, LlmSpaceRequest,
 };
 use sdkwork_llm_plugin_native_sql::{
     NativeSqlAuditLogRow, NativeSqlCandidateRow, NativeSqlCreateSpaceCommand, NativeSqlHabitRow,
     NativeSqlLlmSpaceRow, NativeSqlRecordSourceRow, NativeSqlRetrievalTraceSummaryRow,
 };
 use sdkwork_llm_spi::{
-    DecayLlmHabitCommand, LlmScopeContext, PromoteLlmHabitCommand,
-    RejectLlmCandidateCommand, UpsertLlmHabitCommand,
+    DecayLlmHabitCommand, LlmScopeContext, PromoteLlmHabitCommand, RejectLlmCandidateCommand,
+    UpsertLlmHabitCommand,
 };
 
 use crate::open_api::OpenLlmService;
@@ -44,9 +43,7 @@ impl OpenLlmService {
         })
     }
 
-    pub(crate) fn map_candidate(
-        row: NativeSqlCandidateRow,
-    ) -> LlmServiceResult<LlmCandidate> {
+    pub(crate) fn map_candidate(row: NativeSqlCandidateRow) -> LlmServiceResult<LlmCandidate> {
         Ok(LlmCandidate {
             candidate_id: row.candidate_id.parse().unwrap_or(0),
             space_id: u64::try_from(row.space_id.max(0)).unwrap_or(0),
@@ -913,8 +910,7 @@ impl LlmBackendApi for OpenLlmService {
         context: LlmBackendRequestContext,
         record_id: u64,
     ) -> LlmServiceResult<sdkwork_llm_contract::LlmRecord> {
-        LlmOpenApi::retrieve_memory(self, Self::to_open_context_backend(&context), record_id)
-            .await
+        LlmOpenApi::retrieve_memory(self, Self::to_open_context_backend(&context), record_id).await
     }
 
     async fn update_memory(
@@ -1094,12 +1090,9 @@ impl LlmBackendApi for OpenLlmService {
         context: LlmBackendRequestContext,
         trace_id: u64,
     ) -> LlmServiceResult<serde_json::Value> {
-        let result = LlmOpenApi::retrieve_retrieval(
-            self,
-            Self::to_open_context_backend(&context),
-            trace_id,
-        )
-        .await?;
+        let result =
+            LlmOpenApi::retrieve_retrieval(self, Self::to_open_context_backend(&context), trace_id)
+                .await?;
         Ok(serde_json::to_value(result).unwrap_or(serde_json::Value::Null))
     }
 

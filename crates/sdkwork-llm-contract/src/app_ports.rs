@@ -1,13 +1,12 @@
 use async_trait::async_trait;
 
 use crate::dto::{
-    ListLlmCandidatesQuery, ListHabitsQuery, ListLlmRecordsQuery, LlmCandidate, LlmCandidateList,
+    ListHabitsQuery, ListLlmCandidatesQuery, ListLlmRecordsQuery, LlmCandidate, LlmCandidateList,
     LlmContextPack, LlmContextPackRequest, LlmEvent, LlmEventRequest, LlmExportJob,
-    LlmExportRequest, LlmExtractionRequest, MemoryFeedback, LlmFeedbackRequest,
-    LlmForgetJob, LlmForgetRequest, LlmHabit, LlmHabitList, LlmHabitRequest,
-    LlmLearningJob, LlmLearningSettings, LlmLearningSettingsPatch, LlmRecord,
-    LlmRecordList, LlmRecordPatch, LlmRecordRequest, LlmRecordSourceList,
-    LlmRetrievalRequest, LlmRetrievalResult, LlmReviewRequest,
+    LlmExportRequest, LlmExtractionRequest, LlmFeedbackRequest, LlmForgetJob, LlmForgetRequest,
+    LlmHabit, LlmHabitList, LlmHabitRequest, LlmLearningJob, LlmLearningSettings,
+    LlmLearningSettingsPatch, LlmRecord, LlmRecordList, LlmRecordPatch, LlmRecordRequest,
+    LlmRecordSourceList, LlmRetrievalRequest, LlmRetrievalResult, LlmReviewRequest, MemoryFeedback,
 };
 use crate::ports::{LlmServiceError, LlmServiceResult};
 use crate::space::{ListSpacesQuery, LlmSpace, LlmSpaceList, LlmSpaceRequest};

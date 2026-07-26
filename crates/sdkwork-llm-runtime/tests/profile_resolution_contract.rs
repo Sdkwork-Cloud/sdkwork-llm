@@ -29,10 +29,7 @@ fn native_sql_profile_resolves_when_plugin_is_registered() {
         .unwrap();
 
     assert_eq!(resolved.profile_id, "native-sql-phase1");
-    assert_eq!(
-        resolved.primary_plugin_id,
-        "sdkwork-llm-plugin-native-sql"
-    );
+    assert_eq!(resolved.primary_plugin_id, "sdkwork-llm-plugin-native-sql");
 }
 
 #[test]

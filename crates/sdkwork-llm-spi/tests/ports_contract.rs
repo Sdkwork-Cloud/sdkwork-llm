@@ -1,10 +1,9 @@
 use sdkwork_llm_spi::{
     AppendLlmRetrievalTraceCommand, ApproveLlmCandidateCommand, CreateLlmCandidateCommand,
-    DecayLlmHabitCommand, LlmCandidate, LlmCandidateStorePort, LlmContextPackSnapshot,
-    LlmHabit, LlmHabitStorePort, LlmRetrievalHitDraft, LlmRetrievalTrace,
-    LlmRetrievalTraceStorePort, LlmScopeContext, PromoteLlmHabitCommand,
-    RejectLlmCandidateCommand, RetrieveLlmCandidateQuery, RetrieveLlmHabitQuery,
-    RetrieveLlmRetrievalTraceQuery, UpsertLlmHabitCommand,
+    DecayLlmHabitCommand, LlmCandidate, LlmCandidateStorePort, LlmContextPackSnapshot, LlmHabit,
+    LlmHabitStorePort, LlmRetrievalHitDraft, LlmRetrievalTrace, LlmRetrievalTraceStorePort,
+    LlmScopeContext, PromoteLlmHabitCommand, RejectLlmCandidateCommand, RetrieveLlmCandidateQuery,
+    RetrieveLlmHabitQuery, RetrieveLlmRetrievalTraceQuery, UpsertLlmHabitCommand,
 };
 
 #[test]

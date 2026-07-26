@@ -1910,6 +1910,9 @@ name = "sdkwork-llm-plugin-native-sql"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "sdkwork-database-config",
+ "sdkwork-database-id",
+ "sdkwork-database-sqlx",
  "sdkwork-llm-spi",
  "sdkwork-utils-rust",
  "serde_json",

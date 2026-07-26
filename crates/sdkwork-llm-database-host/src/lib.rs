@@ -30,8 +30,8 @@ pub async fn bootstrap_llm_database(pool: DatabasePool) -> Result<LlmDatabaseHos
     let manifest = DatabaseManifest::from_file(module.manifest_path())
         .map_err(|error| format!("read llm database manifest failed: {error}"))?;
     let options = lifecycle_options_from_env("LLM", &manifest);
-    let orchestrator = LifecycleOrchestrator::new(pool.clone(), module.clone())
-        .with_applied_by("sdkwork-llm");
+    let orchestrator =
+        LifecycleOrchestrator::new(pool.clone(), module.clone()).with_applied_by("sdkwork-llm");
 
     orchestrator
         .init()

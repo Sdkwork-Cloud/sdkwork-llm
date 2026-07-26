@@ -1,10 +1,9 @@
 use async_trait::async_trait;
 
 use crate::dto::{
-    ListAuditLogsQuery, ListLlmCandidatesQuery, ListEventsQuery, ListLlmRecordsQuery,
+    ListAuditLogsQuery, ListEventsQuery, ListLlmCandidatesQuery, ListLlmRecordsQuery,
     ListRetrievalTracesQuery, LlmCandidate, LlmCandidateList, LlmEvent, LlmEventList,
-    LlmProviderHealth, LlmRecord, LlmRecordList, LlmRecordPatch,
-    LlmRetrievalTraceList,
+    LlmProviderHealth, LlmRecord, LlmRecordList, LlmRecordPatch, LlmRetrievalTraceList,
 };
 use crate::ports::{LlmServiceError, LlmServiceResult};
 use crate::space::{ListSpacesQuery, LlmSpace, LlmSpaceList, LlmSpaceRequest};

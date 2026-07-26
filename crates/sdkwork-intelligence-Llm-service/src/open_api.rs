@@ -3,14 +3,12 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use sdkwork_llm_contract::{
     ListLlmCandidatesQuery, ListLlmRecordsQuery, LlmAppRequestContext, LlmBackendRequestContext,
-    LlmCandidate, LlmCandidateList, LlmCapabilities, LlmContextPack,
-    LlmContextPackRequest, LlmEvent, LlmEventRequest, LlmExtractionRequest,
-    MemoryFeedback, LlmFeedbackRequest, LlmImplementationKind, LlmLearningJob,
-    LlmOpenApi, LlmOpenApiRequestContext, LlmPageInfo, LlmProviderHealth,
-    LlmProviderHealthStatus, LlmProviderInterface, LlmRecord, LlmRecordList,
-    LlmRecordPatch, LlmRecordRequest, LlmRetrievalHit, LlmRetrievalRequest,
-    LlmRetrievalResult, LlmRetrievalTrace, LlmRetrieverKind, LlmServiceError,
-    LlmServiceResult, LlmRecordType,
+    LlmCandidate, LlmCandidateList, LlmCapabilities, LlmContextPack, LlmContextPackRequest,
+    LlmEvent, LlmEventRequest, LlmExtractionRequest, LlmFeedbackRequest, LlmImplementationKind,
+    LlmLearningJob, LlmOpenApi, LlmOpenApiRequestContext, LlmPageInfo, LlmProviderHealth,
+    LlmProviderHealthStatus, LlmProviderInterface, LlmRecord, LlmRecordList, LlmRecordPatch,
+    LlmRecordRequest, LlmRecordType, LlmRetrievalHit, LlmRetrievalRequest, LlmRetrievalResult,
+    LlmRetrievalTrace, LlmRetrieverKind, LlmServiceError, LlmServiceResult, MemoryFeedback,
 };
 use sdkwork_llm_core::{
     build_context_pack_from_hits, fuse_retrieval_candidates, keyword_match_score,
@@ -180,10 +178,7 @@ impl LlmOpenApi for OpenLlmService {
                 LlmRetrieverKind::Time,
                 LlmRetrieverKind::Event,
             ],
-            provider_interfaces: vec![
-                LlmProviderInterface::Memory,
-                LlmProviderInterface::Search,
-            ],
+            provider_interfaces: vec![LlmProviderInterface::Memory, LlmProviderInterface::Search],
             implementation_kinds: vec![LlmImplementationKind::NativeSql],
             open_api_prefix: "/llm/v3/api".to_string(),
             sdk_family: "sdkwork-llm-sdk".to_string(),

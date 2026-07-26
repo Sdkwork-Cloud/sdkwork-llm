@@ -2,17 +2,16 @@ use sdkwork_llm_plugin_reference_profiles::ReferenceLlmRuntime;
 use sdkwork_llm_spi::{
     AppendLlmAuditCommand, AppendLlmEventCommand, AppendLlmOutboxCommand,
     AppendLlmRetrievalTraceCommand, ApproveLlmCandidateCommand, AssembleLlmContextCommand,
-    CreateLlmCandidateCommand, CreateLlmRecordCommand, DecayLlmHabitCommand,
-    ExternalLlmBridgePort, ExternalLlmImportCommand, ListLlmRetrievalTracesQuery,
-    ListPendingLlmOutboxQuery, MarkLlmOutboxPublishedCommand, LlmAuditStorePort,
-    LlmCandidateStorePort, LlmContextAssemblerPort, LlmContextPackSnapshot,
-    LlmEvaluationPort, LlmEventStorePort, LlmHabitStorePort, LlmIndexPort,
-    LlmOutboxStorePort, LlmRecordStorePort, LlmRetrievalHitDraft,
-    LlmRetrievalTraceStorePort, LlmRetrieverPort, LlmScopeContext,
-    PromoteLlmHabitCommand, RejectLlmCandidateCommand, RetrieveLlmAuditQuery,
-    RetrieveLlmCandidateQuery, RetrieveLlmCandidatesCommand, RetrieveLlmEventQuery,
-    RetrieveLlmHabitQuery, RetrieveLlmRecordQuery, RetrieveLlmRetrievalTraceQuery,
-    RunLlmEvalCommand, UpsertLlmHabitCommand,
+    CreateLlmCandidateCommand, CreateLlmRecordCommand, DecayLlmHabitCommand, ExternalLlmBridgePort,
+    ExternalLlmImportCommand, ListLlmRetrievalTracesQuery, ListPendingLlmOutboxQuery,
+    LlmAuditStorePort, LlmCandidateStorePort, LlmContextAssemblerPort, LlmContextPackSnapshot,
+    LlmEvaluationPort, LlmEventStorePort, LlmHabitStorePort, LlmIndexPort, LlmOutboxStorePort,
+    LlmRecordStorePort, LlmRetrievalHitDraft, LlmRetrievalTraceStorePort, LlmRetrieverPort,
+    LlmScopeContext, MarkLlmOutboxPublishedCommand, PromoteLlmHabitCommand,
+    RejectLlmCandidateCommand, RetrieveLlmAuditQuery, RetrieveLlmCandidateQuery,
+    RetrieveLlmCandidatesCommand, RetrieveLlmEventQuery, RetrieveLlmHabitQuery,
+    RetrieveLlmRecordQuery, RetrieveLlmRetrievalTraceQuery, RunLlmEvalCommand,
+    UpsertLlmHabitCommand,
 };
 
 #[tokio::test]
@@ -188,12 +187,10 @@ async fn reference_runtime_outbox_context_eval_and_bridge_fail_closed_are_determ
 
     assert_eq!(pending.len(), 1);
     assert_eq!(published.publish_state, "published");
-    assert!(
-        published
-            .published_at
-            .as_deref()
-            .is_some_and(|value| value.ends_with('Z'))
-    );
+    assert!(published
+        .published_at
+        .as_deref()
+        .is_some_and(|value| value.ends_with('Z')));
     assert_eq!(context.context_text, "context line");
     assert_eq!(eval.eval_type, "baseline");
     assert!(bridge_error

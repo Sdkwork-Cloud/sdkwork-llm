@@ -90,16 +90,8 @@ impl LlmPluginManifest {
             "LlmRecordStorePort",
             "canonicalStore",
         )?;
-        self.require_capability_port(
-            self.capabilities.event_log,
-            "LlmEventStorePort",
-            "eventLog",
-        )?;
-        self.require_capability_port(
-            self.capabilities.audit_log,
-            "LlmAuditStorePort",
-            "auditLog",
-        )?;
+        self.require_capability_port(self.capabilities.event_log, "LlmEventStorePort", "eventLog")?;
+        self.require_capability_port(self.capabilities.audit_log, "LlmAuditStorePort", "auditLog")?;
         self.require_capability_port(
             self.capabilities.outbox_log,
             "LlmOutboxStorePort",

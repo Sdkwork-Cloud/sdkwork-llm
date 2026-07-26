@@ -1,49 +1,97 @@
+use crate::sqlx_compat as sqlx;
 use async_trait::async_trait;
+use sdkwork_database_config::{DatabaseConfig, DatabaseEngine};
+use sdkwork_database_id::SnowflakeIdGenerator;
 use sdkwork_llm_spi::{
     AppendLlmAuditCommand, AppendLlmEventCommand, AppendLlmOutboxCommand,
     AppendLlmRetrievalTraceCommand, ApproveLlmCandidateCommand, CreateLlmCandidateCommand,
     CreateLlmRecordCommand, DecayLlmHabitCommand, DeleteLlmRecordCommand,
-    ListLlmRetrievalTracesQuery, ListPendingLlmOutboxQuery, MarkLlmOutboxFailedCommand,
-    MarkLlmOutboxPublishedCommand, LlmAuditRecord, LlmAuditStorePort, LlmCandidate,
-    LlmCandidateStorePort, LlmContextPackSnapshot, LlmDeletionReceipt, LlmEvent,
-    LlmEventStorePort, LlmHabit, LlmHabitStorePort, LlmOutboxEvent,
-    LlmOutboxStorePort, LlmRecord, LlmRecordStorePort, LlmRetrievalHitDraft,
-    LlmRetrievalTrace, LlmRetrievalTraceStorePort, LlmScopeContext, LlmSpiError,
-    LlmSpiResult, PromoteLlmHabitCommand, RejectLlmCandidateCommand,
-    RetrieveLlmAuditQuery, RetrieveLlmCandidateQuery, RetrieveLlmEventQuery,
-    RetrieveLlmHabitQuery, RetrieveLlmOutboxQuery, RetrieveLlmRecordQuery,
-    RetrieveLlmRetrievalTraceQuery, UpsertLlmHabitCommand,
+    ListLlmRetrievalTracesQuery, ListPendingLlmOutboxQuery, LlmAuditRecord, LlmAuditStorePort,
+    LlmCandidate, LlmCandidateStorePort, LlmContextPackSnapshot, LlmDeletionReceipt, LlmEvent,
+    LlmEventStorePort, LlmHabit, LlmHabitStorePort, LlmOutboxEvent, LlmOutboxStorePort, LlmRecord,
+    LlmRecordStorePort, LlmRetrievalHitDraft, LlmRetrievalTrace, LlmRetrievalTraceStorePort,
+    LlmScopeContext, LlmSpiError, LlmSpiResult, MarkLlmOutboxFailedCommand,
+    MarkLlmOutboxPublishedCommand, PromoteLlmHabitCommand, RejectLlmCandidateCommand,
+    RetrieveLlmAuditQuery, RetrieveLlmCandidateQuery, RetrieveLlmEventQuery, RetrieveLlmHabitQuery,
+    RetrieveLlmOutboxQuery, RetrieveLlmRecordQuery, RetrieveLlmRetrievalTraceQuery,
+    UpsertLlmHabitCommand,
 };
 use serde_json::Value;
-use sqlx::{sqlite::SqliteRow, Row, SqlitePool};
+use sqlx::any::AnyRow;
+use sqlx::{AnyPool, Row};
+use std::sync::OnceLock;
 use thiserror::Error;
+
+use crate::pool_backend::{connect_any_pool, LlmSqlDialect};
 
 #[derive(Debug, Clone)]
 pub struct NativeSqlLlmStore {
-    pool: SqlitePool,
+    pool: AnyPool,
+    dialect: LlmSqlDialect,
+    id_generator: SnowflakeIdGenerator,
 }
 
 impl NativeSqlLlmStore {
-    pub async fn new_in_memory_sqlite() -> Result<Self, NativeSqlStoreError> {
-        let pool = SqlitePool::connect("sqlite::memory:").await?;
-        Self::from_sqlite_pool(pool).await
+    pub async fn connect(config: &DatabaseConfig) -> Result<Self, NativeSqlStoreError> {
+        Self::open_pool(config, true).await
     }
 
-    pub async fn from_sqlite_pool(pool: SqlitePool) -> Result<Self, NativeSqlStoreError> {
-        let store = Self { pool };
-        store.apply_sqlite_phase1_migration().await?;
+    pub async fn open_pool(
+        config: &DatabaseConfig,
+        apply_sqlite_migration: bool,
+    ) -> Result<Self, NativeSqlStoreError> {
+        let (pool, dialect) = connect_any_pool(config).await?;
+        let store = Self {
+            pool,
+            dialect,
+            id_generator: development_id_generator(),
+        };
+        if apply_sqlite_migration && matches!(dialect, LlmSqlDialect::Sqlite) {
+            store.apply_sqlite_phase1_migration().await?;
+        }
         Ok(store)
     }
 
-    pub async fn install_sqlite_phase1_schema(
-        pool: &SqlitePool,
-    ) -> Result<(), NativeSqlStoreError> {
-        Self::from_sqlite_pool(pool.clone()).await?;
-        Ok(())
+    pub async fn new_in_memory_sqlite() -> Result<Self, NativeSqlStoreError> {
+        let config = DatabaseConfig {
+            engine: DatabaseEngine::Sqlite,
+            url: "sqlite::memory:".to_string(),
+            ..DatabaseConfig::default()
+        };
+        Self::connect(&config).await
     }
 
-    pub fn pool(&self) -> &SqlitePool {
+    pub async fn from_any_pool(pool: AnyPool, dialect: LlmSqlDialect) -> Self {
+        Self {
+            pool,
+            dialect,
+            id_generator: development_id_generator(),
+        }
+    }
+
+    pub async fn from_database_pool(
+        pool: &sdkwork_database_sqlx::DatabasePool,
+    ) -> Result<Self, NativeSqlStoreError> {
+        Self::open_pool(pool.config(), false).await
+    }
+
+    pub async fn install_sqlite_phase1_schema(pool: &AnyPool) -> Result<(), NativeSqlStoreError> {
+        let store = Self::from_any_pool(pool.clone(), LlmSqlDialect::Sqlite).await;
+        store.apply_sqlite_phase1_migration().await
+    }
+
+    pub fn pool(&self) -> &AnyPool {
         &self.pool
+    }
+
+    pub fn dialect(&self) -> LlmSqlDialect {
+        self.dialect
+    }
+
+    pub(crate) fn next_row_id(&self) -> Result<i64, NativeSqlStoreError> {
+        self.id_generator
+            .generate()
+            .map_err(|error| NativeSqlStoreError::IdGeneration(error.to_string()))
     }
 
     pub async fn append_open_api_event(
@@ -76,9 +124,11 @@ impl NativeSqlLlmStore {
             });
         }
 
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_event (
+              id,
               uuid,
               tenant_id,
               space_id,
@@ -92,9 +142,11 @@ impl NativeSqlLlmStore {
               ingestion_status,
               created_at
             )
-            VALUES (?, ?, ?, 'system', ?, ?, ?, ?, ?, 'internal', 'received', ?)
+            VALUES (?, ?, ?, ?, 'system', ?, ?, SDKWORK_TIMESTAMP_BIND(?),
+                    SDKWORK_JSON_BIND(?), ?, 'internal', 'received', SDKWORK_TIMESTAMP_BIND(?))
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(event_id)
         .bind(scope.tenant_id)
         .bind(scope.space_id)
@@ -115,9 +167,14 @@ impl NativeSqlLlmStore {
         tenant_id: i64,
         event_id: &str,
     ) -> Result<Option<NativeSqlOpenApiEventRow>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect,
             r#"
-            SELECT uuid, space_id, event_type, source_type, event_time, payload_json, payload_hash, ingestion_status, created_at
+            SELECT uuid, space_id, event_type, source_type,
+                   SDKWORK_TIMESTAMP_TEXT(event_time) AS event_time,
+                   SDKWORK_JSON_TEXT(payload_json) AS payload_json,
+                   payload_hash, ingestion_status,
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at
             FROM llm_event
             WHERE tenant_id = ? AND uuid = ?
             "#,
@@ -148,10 +205,14 @@ impl NativeSqlLlmStore {
         tenant_id: i64,
         record_id: &str,
     ) -> Result<Option<NativeSqlLlmRecordDetail>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect,
             r#"
             SELECT uuid, space_id, scope, memory_type, subject, predicate, object_text, canonical_text,
-                   confidence, status, created_at, updated_at, version
+                   SDKWORK_FLOAT(confidence) AS confidence, status,
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at,
+                   SDKWORK_TIMESTAMP_TEXT(updated_at) AS updated_at,
+                   version
             FROM llm_record
             WHERE tenant_id = ?
               AND uuid = ?
@@ -171,9 +232,14 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         event_id: &str,
     ) -> Result<Option<NativeSqlOpenApiEventRow>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect,
             r#"
-            SELECT uuid, space_id, event_type, source_type, event_time, payload_json, payload_hash, ingestion_status, created_at
+            SELECT uuid, space_id, event_type, source_type,
+                   SDKWORK_TIMESTAMP_TEXT(event_time) AS event_time,
+                   SDKWORK_JSON_TEXT(payload_json) AS payload_json,
+                   payload_hash, ingestion_status,
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at
             FROM llm_event
             WHERE tenant_id = ? AND space_id = ? AND uuid = ?
             "#,
@@ -212,9 +278,11 @@ impl NativeSqlLlmStore {
         canonical_text: &str,
     ) -> Result<(), NativeSqlStoreError> {
         self.ensure_space(scope).await?;
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_record (
+              id,
               uuid,
               tenant_id,
               space_id,
@@ -235,9 +303,11 @@ impl NativeSqlLlmStore {
               updated_at,
               version
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1.0, 1, 0, 0.5, 0.5, 'active', 'internal', ?, ?, 1)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1.0, 1, 0, 0.5, 0.5, 'active', 'internal',
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_TIMESTAMP_BIND(?), 1)
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(record_id)
         .bind(scope.tenant_id)
         .bind(scope.space_id)
@@ -356,13 +426,14 @@ impl NativeSqlLlmStore {
         let canonical_text = canonical_text.unwrap_or(&existing.canonical_text);
         let subject = subject.or(existing.subject.as_deref());
 
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             UPDATE llm_record
             SET canonical_text = ?,
                 object_text = ?,
                 subject = ?,
-                updated_at = ?,
+                updated_at = SDKWORK_TIMESTAMP_BIND(?),
                 version = version + 1
             WHERE tenant_id = ?
               AND space_id = ?
@@ -442,9 +513,11 @@ impl NativeSqlLlmStore {
             });
         }
 
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_event (
+              id,
               uuid,
               tenant_id,
               space_id,
@@ -458,9 +531,12 @@ impl NativeSqlLlmStore {
               ingestion_status,
               created_at
             )
-            VALUES (?, ?, ?, 'system', 'llm.event.appended', 'api', ?, ?, ?, 'internal', 'received', ?)
+            VALUES (?, ?, ?, ?, 'system', 'llm.event.appended', 'api',
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_JSON_BIND(?), ?,
+                    'internal', 'received', SDKWORK_TIMESTAMP_BIND(?))
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(event_id)
         .bind(scope.tenant_id)
         .bind(scope.space_id)
@@ -479,8 +555,9 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         event_id: &str,
     ) -> Result<Option<NativeSqlLlmEvent>, NativeSqlStoreError> {
-        let row = sqlx::query(
-            "SELECT uuid, payload_json FROM llm_event WHERE tenant_id = ? AND space_id = ? AND uuid = ?",
+        let row = sqlx::query_for(
+            self.dialect,
+            "SELECT uuid, SDKWORK_JSON_TEXT(payload_json) AS payload_json FROM llm_event WHERE tenant_id = ? AND space_id = ? AND uuid = ?",
         )
         .bind(scope.tenant_id)
         .bind(scope.space_id)
@@ -507,8 +584,9 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         event_id: &str,
     ) -> Result<Option<Value>, NativeSqlStoreError> {
-        let row = sqlx::query(
-            "SELECT payload_json FROM llm_event WHERE tenant_id = ? AND space_id = ? AND uuid = ?",
+        let row = sqlx::query_for(
+            self.dialect,
+            "SELECT SDKWORK_JSON_TEXT(payload_json) AS payload_json FROM llm_event WHERE tenant_id = ? AND space_id = ? AND uuid = ?",
         )
         .bind(scope.tenant_id)
         .bind(scope.space_id)
@@ -532,9 +610,11 @@ impl NativeSqlLlmStore {
         content: &str,
     ) -> Result<(), NativeSqlStoreError> {
         self.ensure_space(scope).await?;
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_record (
+              id,
               uuid,
               tenant_id,
               space_id,
@@ -554,9 +634,11 @@ impl NativeSqlLlmStore {
               created_at,
               updated_at
             )
-            VALUES (?, ?, ?, 'user', 'semantic', ?, 'is', ?, ?, 1.0, 1, 0, 0.5, 0.5, 'active', 'internal', ?, ?)
+            VALUES (?, ?, ?, ?, 'user', 'semantic', ?, 'is', ?, ?, 1.0, 1, 0, 0.5, 0.5,
+                    'active', 'internal', SDKWORK_TIMESTAMP_BIND(?), SDKWORK_TIMESTAMP_BIND(?))
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(record_id)
         .bind(scope.tenant_id)
         .bind(scope.space_id)
@@ -635,12 +717,13 @@ impl NativeSqlLlmStore {
             });
         }
 
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             UPDATE llm_record
             SET status = 'deleted',
-                deleted_at = ?,
-                updated_at = ?,
+                deleted_at = SDKWORK_TIMESTAMP_BIND(?),
+                updated_at = SDKWORK_TIMESTAMP_BIND(?),
                 version = version + 1
             WHERE tenant_id = ? AND space_id = ? AND uuid = ?
             "#,
@@ -694,9 +777,11 @@ impl NativeSqlLlmStore {
         resource_id: &str,
         result: &str,
     ) -> Result<NativeSqlLlmAuditRecord, NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_audit_log (
+              id,
               uuid,
               tenant_id,
               actor_type,
@@ -706,9 +791,10 @@ impl NativeSqlLlmStore {
               result,
               created_at
             )
-            VALUES (?, ?, 'system', ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, 'system', ?, ?, ?, ?, SDKWORK_TIMESTAMP_BIND(?))
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(audit_id)
         .bind(scope.tenant_id)
         .bind(action)
@@ -738,9 +824,11 @@ impl NativeSqlLlmStore {
         result: &str,
         metadata_json: &str,
     ) -> Result<NativeSqlLlmAuditRecord, NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_audit_log (
+              id,
               uuid,
               tenant_id,
               actor_type,
@@ -751,9 +839,11 @@ impl NativeSqlLlmStore {
               metadata_json,
               created_at
             )
-            VALUES (?, ?, 'system', ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, 'system', ?, ?, ?, ?, SDKWORK_JSON_BIND(?),
+                    SDKWORK_TIMESTAMP_BIND(?))
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(audit_id)
         .bind(scope.tenant_id)
         .bind(action)
@@ -812,9 +902,11 @@ impl NativeSqlLlmStore {
         metadata_json: &str,
     ) -> Result<(), NativeSqlStoreError> {
         let audit_id = format!("{resource_type}:{entity_id}:{}", now_text());
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_audit_log (
+              id,
               uuid,
               tenant_id,
               actor_type,
@@ -825,9 +917,11 @@ impl NativeSqlLlmStore {
               metadata_json,
               created_at
             )
-            VALUES (?, ?, 'system', 'admin.config.save', ?, ?, 'active', ?, ?)
+            VALUES (?, ?, ?, 'system', 'admin.config.save', ?, ?, 'active',
+                    SDKWORK_JSON_BIND(?), SDKWORK_TIMESTAMP_BIND(?))
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(audit_id)
         .bind(tenant_id)
         .bind(resource_type)
@@ -954,9 +1048,11 @@ impl NativeSqlLlmStore {
             });
         }
 
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_outbox_event (
+              id,
               uuid,
               tenant_id,
               aggregate_type,
@@ -968,9 +1064,11 @@ impl NativeSqlLlmStore {
               created_at,
               updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, SDKWORK_JSON_BIND(?), 'pending',
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_TIMESTAMP_BIND(?))
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(command.outbox_id)
         .bind(command.scope.tenant_id)
         .bind(command.aggregate_type)
@@ -1001,7 +1099,8 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         outbox_id: &str,
     ) -> Result<Option<NativeSqlLlmOutboxEvent>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect,
             r#"
             SELECT
               uuid,
@@ -1009,9 +1108,9 @@ impl NativeSqlLlmStore {
               aggregate_id,
               event_type,
               event_version,
-              payload_json,
+              SDKWORK_JSON_TEXT(payload_json) AS payload_json,
               publish_state,
-              published_at,
+              SDKWORK_TIMESTAMP_TEXT(published_at) AS published_at,
               retry_count
             FROM llm_outbox_event
             WHERE tenant_id = ? AND uuid = ?
@@ -1041,7 +1140,8 @@ impl NativeSqlLlmStore {
         limit: u32,
     ) -> Result<Vec<NativeSqlLlmOutboxEvent>, NativeSqlStoreError> {
         let row_limit = i64::from(limit.max(1));
-        let rows = sqlx::query(
+        let rows = sqlx::query_for(
+            self.dialect,
             r#"
             SELECT
               uuid,
@@ -1049,9 +1149,9 @@ impl NativeSqlLlmStore {
               aggregate_id,
               event_type,
               event_version,
-              payload_json,
+              SDKWORK_JSON_TEXT(payload_json) AS payload_json,
               publish_state,
-              published_at,
+              SDKWORK_TIMESTAMP_TEXT(published_at) AS published_at,
               retry_count
             FROM llm_outbox_event
             WHERE tenant_id = ? AND publish_state = 'pending'
@@ -1085,12 +1185,13 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         outbox_id: &str,
     ) -> Result<Option<NativeSqlLlmOutboxEvent>, NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             UPDATE llm_outbox_event
             SET publish_state = 'published',
-                published_at = ?,
-                updated_at = ?
+                published_at = SDKWORK_TIMESTAMP_BIND(?),
+                updated_at = SDKWORK_TIMESTAMP_BIND(?)
             WHERE tenant_id = ? AND uuid = ?
             "#,
         )
@@ -1109,12 +1210,13 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         outbox_id: &str,
     ) -> Result<Option<NativeSqlLlmOutboxEvent>, NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             UPDATE llm_outbox_event
             SET publish_state = 'failed',
                 retry_count = retry_count + 1,
-                updated_at = ?
+                updated_at = SDKWORK_TIMESTAMP_BIND(?)
             WHERE tenant_id = ? AND uuid = ?
             "#,
         )
@@ -1132,9 +1234,11 @@ impl NativeSqlLlmStore {
         command: &CreateLlmCandidateCommand,
     ) -> Result<LlmCandidate, NativeSqlStoreError> {
         self.ensure_space(&command.scope).await?;
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_candidate (
+              id,
               uuid,
               tenant_id,
               space_id,
@@ -1149,9 +1253,12 @@ impl NativeSqlLlmStore {
               created_at,
               updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, SDKWORK_JSON_BIND(?),
+                    SDKWORK_JSON_BIND(?), ?, 'pending',
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_TIMESTAMP_BIND(?))
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(&command.candidate_id)
         .bind(command.scope.tenant_id)
         .bind(command.scope.space_id)
@@ -1187,20 +1294,21 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         candidate_id: &str,
     ) -> Result<Option<LlmCandidate>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect,
             r#"
             SELECT
               uuid,
               candidate_type,
               memory_type,
               proposed_text,
-              proposed_payload_json,
-              evidence_json,
-              confidence,
+              SDKWORK_JSON_TEXT(proposed_payload_json) AS proposed_payload_json,
+              SDKWORK_JSON_TEXT(evidence_json) AS evidence_json,
+              SDKWORK_FLOAT(confidence) AS confidence,
               decision_state,
               decision_reason,
               decided_by,
-              decided_at
+              SDKWORK_TIMESTAMP_TEXT(decided_at) AS decided_at
             FROM llm_candidate
             WHERE tenant_id = ? AND space_id = ? AND uuid = ?
             "#,
@@ -1247,9 +1355,11 @@ impl NativeSqlLlmStore {
         command: &UpsertLlmHabitCommand,
     ) -> Result<LlmHabit, NativeSqlStoreError> {
         self.ensure_space(&command.scope).await?;
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_habit (
+              id,
               uuid,
               tenant_id,
               space_id,
@@ -1266,7 +1376,9 @@ impl NativeSqlLlmStore {
               created_at,
               updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_JSON_BIND(?),
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_TIMESTAMP_BIND(?))
             ON CONFLICT (tenant_id, space_id, user_id, habit_key)
             DO UPDATE SET
               uuid = excluded.uuid,
@@ -1282,6 +1394,7 @@ impl NativeSqlLlmStore {
               version = llm_habit.version + 1
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(&command.habit_id)
         .bind(command.scope.tenant_id)
         .bind(command.scope.space_id)
@@ -1326,12 +1439,13 @@ impl NativeSqlLlmStore {
             None => None,
         };
 
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             UPDATE llm_habit
             SET stage = 'promoted',
                 promoted_memory_id = ?,
-                updated_at = ?,
+                updated_at = SDKWORK_TIMESTAMP_BIND(?),
                 version = version + 1
             WHERE tenant_id = ? AND space_id = ? AND user_id = ? AND habit_key = ?
             "#,
@@ -1353,7 +1467,8 @@ impl NativeSqlLlmStore {
         &self,
         command: &DecayLlmHabitCommand,
     ) -> Result<Option<LlmHabit>, NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             UPDATE llm_habit
             SET stage = 'decayed',
@@ -1361,7 +1476,7 @@ impl NativeSqlLlmStore {
                   WHEN strength - ? < 0 THEN 0
                   ELSE strength - ?
                 END,
-                updated_at = ?,
+                updated_at = SDKWORK_TIMESTAMP_BIND(?),
                 version = version + 1
             WHERE tenant_id = ? AND space_id = ? AND user_id = ? AND habit_key = ?
             "#,
@@ -1385,9 +1500,11 @@ impl NativeSqlLlmStore {
         command: &AppendLlmRetrievalTraceCommand,
     ) -> Result<LlmRetrievalTrace, NativeSqlStoreError> {
         self.ensure_space(&command.scope).await?;
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_retrieval_trace (
+              id,
               uuid,
               tenant_id,
               space_id,
@@ -1401,9 +1518,11 @@ impl NativeSqlLlmStore {
               metadata_json,
               created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, SDKWORK_JSON_BIND(?), ?, ?,
+                    SDKWORK_BOOL_BIND(?), SDKWORK_JSON_BIND(?), SDKWORK_TIMESTAMP_BIND(?))
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(&command.trace_id)
         .bind(command.scope.tenant_id)
         .bind(command.scope.space_id)
@@ -1431,9 +1550,11 @@ impl NativeSqlLlmStore {
                 Some(record_id) => self.lookup_record_row_id(&command.scope, record_id).await?,
                 None => None,
             };
-            sqlx::query(
+            sqlx::query_for(
+                self.dialect,
                 r#"
                 INSERT INTO llm_retrieval_hit (
+                  id,
                   uuid,
                   tenant_id,
                   retrieval_trace_id,
@@ -1446,9 +1567,10 @@ impl NativeSqlLlmStore {
                   status,
                   created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, SDKWORK_JSON_BIND(?), ?, SDKWORK_TIMESTAMP_BIND(?))
                 "#,
             )
+            .bind(self.next_row_id()?)
             .bind(&hit.hit_id)
             .bind(command.scope.tenant_id)
             .bind(trace_row_id)
@@ -1465,9 +1587,11 @@ impl NativeSqlLlmStore {
         }
 
         if let Some(context_pack) = &command.context_pack {
-            sqlx::query(
+            sqlx::query_for(
+                self.dialect,
                 r#"
                 INSERT INTO llm_context_pack (
+                  id,
                   uuid,
                   tenant_id,
                   retrieval_trace_id,
@@ -1478,9 +1602,11 @@ impl NativeSqlLlmStore {
                   truncated,
                   created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, SDKWORK_JSON_BIND(?), ?,
+                        SDKWORK_BOOL_BIND(?), SDKWORK_TIMESTAMP_BIND(?))
                 "#,
             )
+            .bind(self.next_row_id()?)
             .bind(&context_pack.context_pack_id)
             .bind(command.scope.tenant_id)
             .bind(trace_row_id)
@@ -1532,7 +1658,7 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         trace_id: &str,
     ) -> Result<Option<LlmRetrievalTrace>, NativeSqlStoreError> {
-        let row = sqlx::query(retrieval_trace_select_sql())
+        let row = sqlx::query_for(self.dialect, retrieval_trace_select_sql())
             .bind(scope.tenant_id)
             .bind(scope.space_id)
             .bind(trace_id)
@@ -1551,7 +1677,8 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         limit: u32,
     ) -> Result<Vec<LlmRetrievalTrace>, NativeSqlStoreError> {
-        let rows = sqlx::query(
+        let rows = sqlx::query_for(
+            self.dialect,
             r#"
             SELECT
               id,
@@ -1559,11 +1686,11 @@ impl NativeSqlLlmStore {
               actor_id,
               query_text,
               query_hash,
-              retrievers_json,
+              SDKWORK_JSON_TEXT(retrievers_json) AS retrievers_json,
               latency_ms,
               result_count,
-              degraded,
-              metadata_json
+              SDKWORK_BOOL_INT(degraded) AS degraded,
+              SDKWORK_JSON_TEXT(metadata_json) AS metadata_json
             FROM llm_retrieval_trace
             WHERE tenant_id = ? AND space_id = ?
             ORDER BY created_at DESC, id DESC
@@ -1600,9 +1727,10 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         event_id: &str,
     ) -> Result<Option<NativeSqlEventIdempotencyState>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect,
             r#"
-            SELECT space_id, payload_json, payload_hash
+            SELECT space_id, SDKWORK_JSON_TEXT(payload_json) AS payload_json, payload_hash
             FROM llm_event
             WHERE tenant_id = ? AND uuid = ?
             "#,
@@ -1624,16 +1752,17 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         outbox_id: &str,
     ) -> Result<Option<NativeSqlOutboxIdempotencyState>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect,
             r#"
             SELECT
               aggregate_type,
               aggregate_id,
               event_type,
               event_version,
-              payload_json,
+              SDKWORK_JSON_TEXT(payload_json) AS payload_json,
               publish_state,
-              published_at,
+              SDKWORK_TIMESTAMP_TEXT(published_at) AS published_at,
               retry_count
             FROM llm_outbox_event
             WHERE tenant_id = ? AND uuid = ?
@@ -1664,14 +1793,15 @@ impl NativeSqlLlmStore {
         decision_reason: Option<&str>,
         decided_by: Option<i64>,
     ) -> Result<Option<LlmCandidate>, NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             UPDATE llm_candidate
             SET decision_state = ?,
                 decision_reason = ?,
                 decided_by = ?,
-                decided_at = ?,
-                updated_at = ?,
+                decided_at = SDKWORK_TIMESTAMP_BIND(?),
+                updated_at = SDKWORK_TIMESTAMP_BIND(?),
                 version = version + 1
             WHERE tenant_id = ? AND space_id = ? AND uuid = ?
             "#,
@@ -1695,8 +1825,9 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         user_id: i64,
         habit_key: &str,
-    ) -> Result<Option<SqliteRow>, NativeSqlStoreError> {
-        let row = sqlx::query(
+    ) -> Result<Option<AnyRow>, NativeSqlStoreError> {
+        let row = sqlx::query_for(
+            self.dialect,
             r#"
             SELECT
               habit.uuid,
@@ -1705,13 +1836,13 @@ impl NativeSqlLlmStore {
               habit.habit_type,
               habit.description,
               habit.stage,
-              habit.strength,
-              habit.confidence,
+              SDKWORK_FLOAT(habit.strength) AS strength,
+              SDKWORK_FLOAT(habit.confidence) AS confidence,
               habit.support_count,
-              habit.last_signal_at,
+              SDKWORK_TIMESTAMP_TEXT(habit.last_signal_at) AS last_signal_at,
               promoted.uuid AS promoted_memory_uuid,
-              habit.decay_after,
-              habit.metadata_json
+              SDKWORK_TIMESTAMP_TEXT(habit.decay_after) AS decay_after,
+              SDKWORK_JSON_TEXT(habit.metadata_json) AS metadata_json
             FROM llm_habit habit
             LEFT JOIN llm_record promoted
               ON promoted.id = habit.promoted_memory_id
@@ -1781,7 +1912,7 @@ impl NativeSqlLlmStore {
     async fn retrieval_trace_from_row(
         &self,
         scope: &LlmScopeContext,
-        row: SqliteRow,
+        row: AnyRow,
     ) -> Result<LlmRetrievalTrace, NativeSqlStoreError> {
         let trace_row_id: i64 = row.get("id");
         let hits = self.fetch_retrieval_hits(scope, trace_row_id).await?;
@@ -1807,16 +1938,17 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         trace_row_id: i64,
     ) -> Result<Vec<LlmRetrievalHitDraft>, NativeSqlStoreError> {
-        let rows = sqlx::query(
+        let rows = sqlx::query_for(
+            self.dialect,
             r#"
             SELECT
               hit.uuid,
               record.uuid AS memory_uuid,
               hit.retriever_name,
               hit.result_rank,
-              hit.raw_score,
-              hit.fused_score,
-              hit.explanation_json,
+              SDKWORK_FLOAT(hit.raw_score) AS raw_score,
+              SDKWORK_FLOAT(hit.fused_score) AS fused_score,
+              SDKWORK_JSON_TEXT(hit.explanation_json) AS explanation_json,
               hit.status
             FROM llm_retrieval_hit hit
             LEFT JOIN llm_record record
@@ -1854,9 +1986,13 @@ impl NativeSqlLlmStore {
         scope: &LlmScopeContext,
         trace_row_id: i64,
     ) -> Result<Option<LlmContextPackSnapshot>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect,
             r#"
-            SELECT uuid, pack_json, estimated_tokens, truncated
+            SELECT uuid,
+                   SDKWORK_JSON_TEXT(pack_json) AS pack_json,
+                   estimated_tokens,
+                   SDKWORK_BOOL_INT(truncated) AS truncated
             FROM llm_context_pack
             WHERE tenant_id = ? AND retrieval_trace_id = ?
             ORDER BY id DESC
@@ -1946,9 +2082,11 @@ impl NativeSqlLlmStore {
             None
         };
 
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_context_pack (
+              id,
               uuid,
               tenant_id,
               retrieval_trace_id,
@@ -1959,9 +2097,11 @@ impl NativeSqlLlmStore {
               truncated,
               created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, SDKWORK_JSON_BIND(?), ?,
+                    SDKWORK_BOOL_BIND(?), SDKWORK_TIMESTAMP_BIND(?))
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(context_pack_id)
         .bind(tenant_id)
         .bind(trace_row_id)
@@ -2071,13 +2211,15 @@ impl NativeSqlLlmStore {
         space_id: i64,
         request: &NativeSqlCreateSpaceCommand,
     ) -> Result<(), NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_space (
               id, uuid, tenant_id, organization_id, owner_subject_type, owner_subject_id,
               space_type, display_name, default_scope, lifecycle_status, created_at, updated_at, version
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, 0)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active',
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_TIMESTAMP_BIND(?), 0)
             "#,
         )
         .bind(space_id)
@@ -2113,10 +2255,12 @@ impl NativeSqlLlmStore {
         let default_scope =
             default_scope.unwrap_or(existing.default_scope.as_deref().unwrap_or("user"));
 
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
             UPDATE llm_space
-            SET display_name = ?, default_scope = ?, updated_at = ?, version = version + 1
+            SET display_name = ?, default_scope = ?,
+                updated_at = SDKWORK_TIMESTAMP_BIND(?), version = version + 1
             WHERE tenant_id = ? AND id = ?
             "#,
         )
@@ -2326,7 +2470,8 @@ impl NativeSqlLlmStore {
         candidate_id: &str,
         memory_uuid: &str,
     ) -> Result<(), NativeSqlStoreError> {
-        let result = sqlx::query(
+        let result = sqlx::query_for(
+            self.dialect,
             r#"
             UPDATE llm_candidate
             SET target_memory_id = (
@@ -2335,7 +2480,7 @@ impl NativeSqlLlmStore {
               WHERE tenant_id = ?
                 AND uuid = ?
             ),
-            updated_at = ?
+            updated_at = SDKWORK_TIMESTAMP_BIND(?)
             WHERE tenant_id = ?
               AND uuid = ?
             "#,
@@ -2470,9 +2615,11 @@ impl NativeSqlLlmStore {
         source_role: &str,
         confidence_delta: Option<f64>,
     ) -> Result<(), NativeSqlStoreError> {
-        let result = sqlx::query(
+        let result = sqlx::query_for(
+            self.dialect,
             r#"
             INSERT INTO llm_record_source (
+              id,
               uuid,
               tenant_id,
               memory_id,
@@ -2484,11 +2631,12 @@ impl NativeSqlLlmStore {
             SELECT
               ?,
               ?,
+              ?,
               record.id,
               event.id,
               ?,
               ?,
-              ?
+              SDKWORK_TIMESTAMP_BIND(?)
             FROM llm_record record
             JOIN llm_event event
               ON event.tenant_id = record.tenant_id
@@ -2498,6 +2646,7 @@ impl NativeSqlLlmStore {
               AND record.status <> 'deleted'
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(source_id)
         .bind(tenant_id)
         .bind(source_role)
@@ -2603,9 +2752,10 @@ impl NativeSqlLlmStore {
     }
 
     async fn ensure_space(&self, scope: &LlmScopeContext) -> Result<(), NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect,
             r#"
-            INSERT OR IGNORE INTO llm_space (
+            INSERT INTO llm_space (
               id,
               uuid,
               tenant_id,
@@ -2620,14 +2770,19 @@ impl NativeSqlLlmStore {
               updated_at,
               version
             )
-            VALUES (?, ?, ?, ?, 'user', ?, 'personal', 'Default Memory Space', 'user', 'active', ?, ?, 0)
+            VALUES (?, ?, ?, ?, 'user', ?, 'personal', 'Default Memory Space', 'user', 'active',
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_TIMESTAMP_BIND(?), 0)
+            ON CONFLICT (tenant_id, uuid) DO NOTHING
             "#,
         )
         .bind(scope.space_id)
         .bind(format!("space-{}", scope.space_id))
         .bind(scope.tenant_id)
         .bind(scope.organization_id.unwrap_or(0))
-        .bind(format!("tenant-{}-space-{}", scope.tenant_id, scope.space_id))
+        .bind(format!(
+            "tenant-{}-space-{}",
+            scope.tenant_id, scope.space_id
+        ))
         .bind(now_text())
         .bind(now_text())
         .execute(&self.pool)
@@ -2650,10 +2805,7 @@ impl LlmEventStorePort for NativeSqlLlmStore {
         })
     }
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmEventQuery,
-    ) -> LlmSpiResult<Option<LlmEvent>> {
+    async fn retrieve(&self, query: RetrieveLlmEventQuery) -> LlmSpiResult<Option<LlmEvent>> {
         let event = self
             .retrieve_event(&query.scope, &query.event_id)
             .await
@@ -2679,10 +2831,7 @@ impl LlmRecordStorePort for NativeSqlLlmStore {
         })
     }
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmRecordQuery,
-    ) -> LlmSpiResult<Option<LlmRecord>> {
+    async fn retrieve(&self, query: RetrieveLlmRecordQuery) -> LlmSpiResult<Option<LlmRecord>> {
         let record = self
             .retrieve_record(&query.scope, &query.record_id)
             .await
@@ -2706,10 +2855,7 @@ impl LlmRecordStorePort for NativeSqlLlmStore {
 
 #[async_trait]
 impl LlmAuditStorePort for NativeSqlLlmStore {
-    async fn append(
-        &self,
-        command: AppendLlmAuditCommand,
-    ) -> LlmSpiResult<LlmAuditRecord> {
+    async fn append(&self, command: AppendLlmAuditCommand) -> LlmSpiResult<LlmAuditRecord> {
         let audit = self
             .append_audit(
                 &command.scope,
@@ -2731,10 +2877,7 @@ impl LlmAuditStorePort for NativeSqlLlmStore {
         })
     }
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmAuditQuery,
-    ) -> LlmSpiResult<Option<LlmAuditRecord>> {
+    async fn retrieve(&self, query: RetrieveLlmAuditQuery) -> LlmSpiResult<Option<LlmAuditRecord>> {
         let audit = self
             .retrieve_audit(&query.scope, &query.audit_id)
             .await
@@ -2752,10 +2895,7 @@ impl LlmAuditStorePort for NativeSqlLlmStore {
 
 #[async_trait]
 impl LlmOutboxStorePort for NativeSqlLlmStore {
-    async fn append(
-        &self,
-        command: AppendLlmOutboxCommand,
-    ) -> LlmSpiResult<LlmOutboxEvent> {
+    async fn append(&self, command: AppendLlmOutboxCommand) -> LlmSpiResult<LlmOutboxEvent> {
         let outbox = self
             .append_outbox_event(NativeSqlAppendOutboxEventCommand {
                 scope: &command.scope,
@@ -2836,10 +2976,7 @@ impl LlmOutboxStorePort for NativeSqlLlmStore {
 
 #[async_trait]
 impl LlmCandidateStorePort for NativeSqlLlmStore {
-    async fn create(
-        &self,
-        command: CreateLlmCandidateCommand,
-    ) -> LlmSpiResult<LlmCandidate> {
+    async fn create(&self, command: CreateLlmCandidateCommand) -> LlmSpiResult<LlmCandidate> {
         self.create_candidate(&command)
             .await
             .map_err(|err| port_error("LlmCandidateStorePort", err))
@@ -2881,28 +3018,19 @@ impl LlmHabitStorePort for NativeSqlLlmStore {
             .map_err(|err| port_error("LlmHabitStorePort", err))
     }
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmHabitQuery,
-    ) -> LlmSpiResult<Option<LlmHabit>> {
+    async fn retrieve(&self, query: RetrieveLlmHabitQuery) -> LlmSpiResult<Option<LlmHabit>> {
         self.retrieve_habit(&query.scope, query.user_id, &query.habit_key)
             .await
             .map_err(|err| port_error("LlmHabitStorePort", err))
     }
 
-    async fn promote(
-        &self,
-        command: PromoteLlmHabitCommand,
-    ) -> LlmSpiResult<Option<LlmHabit>> {
+    async fn promote(&self, command: PromoteLlmHabitCommand) -> LlmSpiResult<Option<LlmHabit>> {
         self.promote_habit(&command)
             .await
             .map_err(|err| port_error("LlmHabitStorePort", err))
     }
 
-    async fn decay(
-        &self,
-        command: DecayLlmHabitCommand,
-    ) -> LlmSpiResult<Option<LlmHabit>> {
+    async fn decay(&self, command: DecayLlmHabitCommand) -> LlmSpiResult<Option<LlmHabit>> {
         self.decay_habit(&command)
             .await
             .map_err(|err| port_error("LlmHabitStorePort", err))
@@ -2969,7 +3097,7 @@ pub struct NativeSqlLlmRecordDetail {
     pub version: i64,
 }
 
-fn record_detail_from_row(row: SqliteRow) -> NativeSqlLlmRecordDetail {
+fn record_detail_from_row(row: AnyRow) -> NativeSqlLlmRecordDetail {
     NativeSqlLlmRecordDetail {
         record_id: row.get("uuid"),
         space_id: row.get("space_id"),
@@ -3113,7 +3241,7 @@ pub struct NativeSqlContextPackRow {
     pub retrieval_trace_id: Option<i64>,
 }
 
-fn space_row_from_sql(row: SqliteRow) -> NativeSqlLlmSpaceRow {
+fn space_row_from_sql(row: AnyRow) -> NativeSqlLlmSpaceRow {
     NativeSqlLlmSpaceRow {
         space_id: row.get("id"),
         uuid: row.get("uuid"),
@@ -3186,8 +3314,12 @@ pub struct NativeSqlAppendOutboxEventCommand<'a> {
 pub enum NativeSqlStoreError {
     #[error("native SQL store database error: {0}")]
     Database(#[from] sqlx::Error),
+    #[error("native SQL store pool error: {0}")]
+    Pool(#[from] sdkwork_database_sqlx::PoolError),
     #[error("native SQL store JSON payload error: {0}")]
     Json(#[from] serde_json::Error),
+    #[error("native SQL store ID generation error: {0}")]
+    IdGeneration(String),
     #[error("native SQL event append conflict for tenant {tenant_id} event {event_id}")]
     EventConflict { tenant_id: i64, event_id: String },
     #[error("native SQL outbox append conflict for tenant {tenant_id} outbox event {outbox_id}")]
@@ -3245,7 +3377,7 @@ fn into_spi_outbox_event(outbox: NativeSqlLlmOutboxEvent) -> LlmOutboxEvent {
     }
 }
 
-fn candidate_from_row(row: SqliteRow) -> LlmCandidate {
+fn candidate_from_row(row: AnyRow) -> LlmCandidate {
     LlmCandidate {
         candidate_id: row.get("uuid"),
         candidate_type: row.get("candidate_type"),
@@ -3261,7 +3393,7 @@ fn candidate_from_row(row: SqliteRow) -> LlmCandidate {
     }
 }
 
-fn map_habit_row(row: SqliteRow) -> NativeSqlHabitRow {
+fn map_habit_row(row: AnyRow) -> NativeSqlHabitRow {
     NativeSqlHabitRow {
         habit_id: row.get("uuid"),
         space_id: row.get("space_id"),
@@ -3283,7 +3415,7 @@ fn map_habit_row(row: SqliteRow) -> NativeSqlHabitRow {
     }
 }
 
-fn habit_from_row(row: SqliteRow) -> LlmHabit {
+fn habit_from_row(row: AnyRow) -> LlmHabit {
     LlmHabit {
         habit_id: row.get("uuid"),
         user_id: row.get("user_id"),
@@ -3309,11 +3441,11 @@ fn retrieval_trace_select_sql() -> &'static str {
       actor_id,
       query_text,
       query_hash,
-      retrievers_json,
+      SDKWORK_JSON_TEXT(retrievers_json) AS retrievers_json,
       latency_ms,
       result_count,
-      degraded,
-      metadata_json
+      SDKWORK_BOOL_INT(degraded) AS degraded,
+      SDKWORK_JSON_TEXT(metadata_json) AS metadata_json
     FROM llm_retrieval_trace
     WHERE tenant_id = ? AND space_id = ? AND uuid = ?
     "#
@@ -3333,6 +3465,21 @@ fn sqlite_int_to_bool(value: i64) -> bool {
 
 pub(crate) fn now_text() -> String {
     sdkwork_utils_rust::format_datetime(sdkwork_utils_rust::now(), None)
+}
+
+fn development_id_generator() -> SnowflakeIdGenerator {
+    static GENERATOR: OnceLock<SnowflakeIdGenerator> = OnceLock::new();
+    GENERATOR
+        .get_or_init(|| {
+            let node_id = std::env::var("SDKWORK_LLM_SNOWFLAKE_NODE_ID")
+                .ok()
+                .and_then(|value| sdkwork_utils_rust::parse_int(&value))
+                .and_then(|value| u16::try_from(value).ok())
+                .unwrap_or(0);
+            SnowflakeIdGenerator::new(node_id)
+                .expect("validated development snowflake node ID must initialize")
+        })
+        .clone()
 }
 
 fn stable_hash(value: &str) -> String {

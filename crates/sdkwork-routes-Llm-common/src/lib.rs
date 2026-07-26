@@ -2,9 +2,7 @@
 
 use async_trait::async_trait;
 use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
-use sdkwork_llm_contract::{
-    llm_is_production_like_environment, llm_use_dev_inline_auth_resolver,
-};
+use sdkwork_llm_contract::{llm_is_production_like_environment, llm_use_dev_inline_auth_resolver};
 use sdkwork_web_core::{WebFrameworkError, WebRequestContextResolver, WebRequestPrincipal};
 
 /// How HTTP routers should resolve request context from environment.

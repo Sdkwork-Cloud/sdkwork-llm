@@ -8,10 +8,7 @@ pub use sdkwork_llm_database_host::{
     bootstrap_llm_database, bootstrap_llm_database_from_env, LlmDatabaseHost,
 };
 
-use crate::db::{
-    connect_llm_pool_from_env, install_sqlite_schema, open_native_sql_store_from_pool,
-    LlmDatabasePool,
-};
+use crate::db::{connect_llm_pool_from_env, open_native_sql_store_from_pool, LlmDatabasePool};
 
 pub struct LlmDataPlane {
     pub pool: LlmDatabasePool,
@@ -19,8 +16,7 @@ pub struct LlmDataPlane {
 }
 
 pub async fn connect_and_bootstrap_llm_database_from_env() -> Result<LlmDatabaseHost, String> {
-    let config = DatabaseConfig::from_env("LLM")
-        .map_err(|error| error.to_string())?;
+    let config = DatabaseConfig::from_env("LLM").map_err(|error| error.to_string())?;
     let pool = create_pool_from_config(config)
         .await
         .map_err(|error| error.to_string())?;
@@ -35,10 +31,15 @@ pub async fn bootstrap_llm_data_plane_from_env() -> Result<LlmDataPlane, String>
 
     if pool.as_postgres().is_some() {
         bootstrap_llm_database(pool.clone()).await?;
-    } else {
-        install_sqlite_schema(&pool).await?;
     }
 
-    let store = open_native_sql_store_from_pool(&pool).await?;
+    let store = if pool.as_sqlite().is_some() {
+        let config = DatabaseConfig::from_env("LLM").map_err(|error| error.to_string())?;
+        NativeSqlLlmStore::connect(&config)
+            .await
+            .map_err(|error| error.to_string())?
+    } else {
+        open_native_sql_store_from_pool(&pool).await?
+    };
     Ok(LlmDataPlane { pool, store })
 }

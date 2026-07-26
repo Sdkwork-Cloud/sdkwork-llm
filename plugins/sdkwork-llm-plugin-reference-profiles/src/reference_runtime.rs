@@ -10,18 +10,16 @@ use sdkwork_llm_spi::{
     ExternalLlmDeleteReceipt, ExternalLlmExportCommand, ExternalLlmExportResult,
     ExternalLlmImportCommand, ExternalLlmImportResult, ExternalLlmShadowReadCommand,
     ExternalLlmShadowReadResult, ListLlmRetrievalTracesQuery, ListPendingLlmOutboxQuery,
-    MarkLlmOutboxFailedCommand, MarkLlmOutboxPublishedCommand, LlmAuditRecord,
-    LlmAuditStorePort, LlmCandidate, LlmCandidateStorePort, LlmContextAssemblerPort,
-    LlmContextPackDraft, LlmDeletionReceipt, LlmEvalRunResult, LlmEvaluationPort,
-    LlmEvent, LlmEventStorePort, LlmHabit, LlmHabitStorePort, LlmIndexPort,
-    LlmIndexReceipt, LlmOutboxEvent, LlmOutboxStorePort, LlmRecord,
-    LlmRecordStorePort, LlmRetrievalTrace, LlmRetrievalTraceStorePort,
-    LlmRetrieverPort, LlmRetrieverResult, LlmScopeContext, LlmSpiError,
-    LlmSpiResult, PromoteLlmHabitCommand, RejectLlmCandidateCommand,
+    LlmAuditRecord, LlmAuditStorePort, LlmCandidate, LlmCandidateStorePort,
+    LlmContextAssemblerPort, LlmContextPackDraft, LlmDeletionReceipt, LlmEvalRunResult,
+    LlmEvaluationPort, LlmEvent, LlmEventStorePort, LlmHabit, LlmHabitStorePort, LlmIndexPort,
+    LlmIndexReceipt, LlmOutboxEvent, LlmOutboxStorePort, LlmRecord, LlmRecordStorePort,
+    LlmRetrievalTrace, LlmRetrievalTraceStorePort, LlmRetrieverPort, LlmRetrieverResult,
+    LlmScopeContext, LlmSpiError, LlmSpiResult, MarkLlmOutboxFailedCommand,
+    MarkLlmOutboxPublishedCommand, PromoteLlmHabitCommand, RejectLlmCandidateCommand,
     RetrieveLlmAuditQuery, RetrieveLlmCandidateQuery, RetrieveLlmCandidatesCommand,
-    RetrieveLlmEventQuery, RetrieveLlmHabitQuery, RetrieveLlmOutboxQuery,
-    RetrieveLlmRecordQuery, RetrieveLlmRetrievalTraceQuery, RunLlmEvalCommand,
-    UpsertLlmHabitCommand,
+    RetrieveLlmEventQuery, RetrieveLlmHabitQuery, RetrieveLlmOutboxQuery, RetrieveLlmRecordQuery,
+    RetrieveLlmRetrievalTraceQuery, RunLlmEvalCommand, UpsertLlmHabitCommand,
 };
 
 #[derive(Debug, Default)]
@@ -57,15 +55,10 @@ impl LlmRecordStorePort for ReferenceLlmRuntime {
         Ok(record)
     }
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmRecordQuery,
-    ) -> LlmSpiResult<Option<LlmRecord>> {
+    async fn retrieve(&self, query: RetrieveLlmRecordQuery) -> LlmSpiResult<Option<LlmRecord>> {
         let key = ScopedId::new(&query.scope, query.record_id);
         let records = self.records.lock().map_err(lock_error)?;
-        Ok(records
-            .get(&key)
-            .and_then(LlmRecordState::visible_record))
+        Ok(records.get(&key).and_then(LlmRecordState::visible_record))
     }
 
     async fn mark_deleted(
@@ -110,10 +103,7 @@ impl LlmEventStorePort for ReferenceLlmRuntime {
         Ok(event)
     }
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmEventQuery,
-    ) -> LlmSpiResult<Option<LlmEvent>> {
+    async fn retrieve(&self, query: RetrieveLlmEventQuery) -> LlmSpiResult<Option<LlmEvent>> {
         let key = ScopedId::new(&query.scope, query.event_id);
         Ok(self.events.lock().map_err(lock_error)?.get(&key).cloned())
     }
@@ -121,10 +111,7 @@ impl LlmEventStorePort for ReferenceLlmRuntime {
 
 #[async_trait]
 impl LlmAuditStorePort for ReferenceLlmRuntime {
-    async fn append(
-        &self,
-        command: AppendLlmAuditCommand,
-    ) -> LlmSpiResult<LlmAuditRecord> {
+    async fn append(&self, command: AppendLlmAuditCommand) -> LlmSpiResult<LlmAuditRecord> {
         let audit = LlmAuditRecord {
             audit_id: command.audit_id.clone(),
             action: command.action,
@@ -141,10 +128,7 @@ impl LlmAuditStorePort for ReferenceLlmRuntime {
         Ok(audit)
     }
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmAuditQuery,
-    ) -> LlmSpiResult<Option<LlmAuditRecord>> {
+    async fn retrieve(&self, query: RetrieveLlmAuditQuery) -> LlmSpiResult<Option<LlmAuditRecord>> {
         let key = ScopedId::new(&query.scope, query.audit_id);
         Ok(self.audits.lock().map_err(lock_error)?.get(&key).cloned())
     }
@@ -152,10 +136,7 @@ impl LlmAuditStorePort for ReferenceLlmRuntime {
 
 #[async_trait]
 impl LlmOutboxStorePort for ReferenceLlmRuntime {
-    async fn append(
-        &self,
-        command: AppendLlmOutboxCommand,
-    ) -> LlmSpiResult<LlmOutboxEvent> {
+    async fn append(&self, command: AppendLlmOutboxCommand) -> LlmSpiResult<LlmOutboxEvent> {
         let outbox = LlmOutboxEvent {
             outbox_id: command.outbox_id.clone(),
             aggregate_type: command.aggregate_type,
@@ -249,10 +230,7 @@ impl ReferenceLlmRuntime {
 
 #[async_trait]
 impl LlmCandidateStorePort for ReferenceLlmRuntime {
-    async fn create(
-        &self,
-        command: CreateLlmCandidateCommand,
-    ) -> LlmSpiResult<LlmCandidate> {
+    async fn create(&self, command: CreateLlmCandidateCommand) -> LlmSpiResult<LlmCandidate> {
         let candidate = LlmCandidate {
             candidate_id: command.candidate_id.clone(),
             candidate_type: command.candidate_type,
@@ -367,18 +345,12 @@ impl LlmHabitStorePort for ReferenceLlmRuntime {
         Ok(habit)
     }
 
-    async fn retrieve(
-        &self,
-        query: RetrieveLlmHabitQuery,
-    ) -> LlmSpiResult<Option<LlmHabit>> {
+    async fn retrieve(&self, query: RetrieveLlmHabitQuery) -> LlmSpiResult<Option<LlmHabit>> {
         let key = ScopedHabitKey::new(&query.scope, query.user_id, query.habit_key);
         Ok(self.habits.lock().map_err(lock_error)?.get(&key).cloned())
     }
 
-    async fn promote(
-        &self,
-        command: PromoteLlmHabitCommand,
-    ) -> LlmSpiResult<Option<LlmHabit>> {
+    async fn promote(&self, command: PromoteLlmHabitCommand) -> LlmSpiResult<Option<LlmHabit>> {
         let key = ScopedHabitKey::new(&command.scope, command.user_id, command.habit_key);
         let mut habits = self.habits.lock().map_err(lock_error)?;
         let Some(habit) = habits.get_mut(&key) else {
@@ -391,10 +363,7 @@ impl LlmHabitStorePort for ReferenceLlmRuntime {
         Ok(Some(habit.clone()))
     }
 
-    async fn decay(
-        &self,
-        command: DecayLlmHabitCommand,
-    ) -> LlmSpiResult<Option<LlmHabit>> {
+    async fn decay(&self, command: DecayLlmHabitCommand) -> LlmSpiResult<Option<LlmHabit>> {
         let key = ScopedHabitKey::new(&command.scope, command.user_id, command.habit_key);
         let mut habits = self.habits.lock().map_err(lock_error)?;
         let Some(habit) = habits.get_mut(&key) else {

@@ -1,3 +1,4 @@
+use crate::sqlx_compat as sqlx;
 use sqlx::Row;
 
 use crate::store::{now_text, NativeSqlLlmStore, NativeSqlStoreError};
@@ -100,9 +101,11 @@ impl NativeSqlLlmStore {
         status: &str,
         config_json: Option<&str>,
     ) -> Result<(), NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect(),
             r#"
             INSERT INTO llm_index (
+              id,
               uuid,
               tenant_id,
               space_id,
@@ -114,9 +117,11 @@ impl NativeSqlLlmStore {
               updated_at,
               version
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+            VALUES (?, ?, ?, ?, ?, ?, ?, SDKWORK_JSON_BIND(?),
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_TIMESTAMP_BIND(?), 1)
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(index_uuid)
         .bind(tenant_id)
         .bind(space_id)
@@ -136,10 +141,15 @@ impl NativeSqlLlmStore {
         tenant_id: i64,
         page_size: i32,
     ) -> Result<Vec<NativeSqlMemoryIndexRow>, NativeSqlStoreError> {
-        let rows = sqlx::query(
+        let rows = sqlx::query_for(
+            self.dialect(),
             r#"
-            SELECT uuid, space_id, index_kind, schema_version, status, config_json,
-                   last_rebuilt_at, created_at, updated_at, version
+            SELECT uuid, space_id, index_kind, schema_version, status,
+                   SDKWORK_JSON_TEXT(config_json) AS config_json,
+                   SDKWORK_TIMESTAMP_TEXT(last_rebuilt_at) AS last_rebuilt_at,
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at,
+                   SDKWORK_TIMESTAMP_TEXT(updated_at) AS updated_at,
+                   version
             FROM llm_index
             WHERE tenant_id = ?
             ORDER BY updated_at DESC
@@ -159,10 +169,15 @@ impl NativeSqlLlmStore {
         tenant_id: i64,
         index_uuid: &str,
     ) -> Result<Option<NativeSqlMemoryIndexRow>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect(),
             r#"
-            SELECT uuid, space_id, index_kind, schema_version, status, config_json,
-                   last_rebuilt_at, created_at, updated_at, version
+            SELECT uuid, space_id, index_kind, schema_version, status,
+                   SDKWORK_JSON_TEXT(config_json) AS config_json,
+                   SDKWORK_TIMESTAMP_TEXT(last_rebuilt_at) AS last_rebuilt_at,
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at,
+                   SDKWORK_TIMESTAMP_TEXT(updated_at) AS updated_at,
+                   version
             FROM llm_index
             WHERE tenant_id = ? AND uuid = ?
             "#,
@@ -190,13 +205,14 @@ impl NativeSqlLlmStore {
                 message: "memory index not found".to_string(),
             })?;
 
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect(),
             r#"
             UPDATE llm_index
             SET status = ?,
-                config_json = ?,
-                last_rebuilt_at = ?,
-                updated_at = ?,
+                config_json = SDKWORK_JSON_BIND(?),
+                last_rebuilt_at = SDKWORK_TIMESTAMP_BIND(?),
+                updated_at = SDKWORK_TIMESTAMP_BIND(?),
                 version = version + 1
             WHERE tenant_id = ? AND uuid = ?
             "#,
@@ -252,15 +268,18 @@ impl NativeSqlLlmStore {
         context_budget_tokens: i32,
         status: &str,
     ) -> Result<(), NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect(),
             r#"
             INSERT INTO llm_retrieval_profile (
-              uuid, tenant_id, space_id, name, strategy, retrievers_json,
+              id, uuid, tenant_id, space_id, name, strategy, retrievers_json,
               top_k, context_budget_tokens, status, created_at, updated_at, version
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+            VALUES (?, ?, ?, ?, ?, ?, SDKWORK_JSON_BIND(?), ?, ?, ?,
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_TIMESTAMP_BIND(?), 1)
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(profile_uuid)
         .bind(tenant_id)
         .bind(space_id)
@@ -282,10 +301,14 @@ impl NativeSqlLlmStore {
         tenant_id: i64,
         page_size: i32,
     ) -> Result<Vec<NativeSqlRetrievalProfileRow>, NativeSqlStoreError> {
-        let rows = sqlx::query(
+        let rows = sqlx::query_for(
+            self.dialect(),
             r#"
-            SELECT uuid, space_id, name, strategy, retrievers_json, top_k,
-                   context_budget_tokens, status, created_at, updated_at, version
+            SELECT uuid, space_id, name, strategy,
+                   SDKWORK_JSON_TEXT(retrievers_json) AS retrievers_json,
+                   top_k, context_budget_tokens, status,
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at,
+                   SDKWORK_TIMESTAMP_TEXT(updated_at) AS updated_at, version
             FROM llm_retrieval_profile
             WHERE tenant_id = ?
             ORDER BY updated_at DESC
@@ -305,10 +328,14 @@ impl NativeSqlLlmStore {
         tenant_id: i64,
         profile_uuid: &str,
     ) -> Result<Option<NativeSqlRetrievalProfileRow>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect(),
             r#"
-            SELECT uuid, space_id, name, strategy, retrievers_json, top_k,
-                   context_budget_tokens, status, created_at, updated_at, version
+            SELECT uuid, space_id, name, strategy,
+                   SDKWORK_JSON_TEXT(retrievers_json) AS retrievers_json,
+                   top_k, context_budget_tokens, status,
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at,
+                   SDKWORK_TIMESTAMP_TEXT(updated_at) AS updated_at, version
             FROM llm_retrieval_profile
             WHERE tenant_id = ? AND uuid = ?
             "#,
@@ -339,16 +366,17 @@ impl NativeSqlLlmStore {
                 message: "retrieval profile not found".to_string(),
             })?;
 
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect(),
             r#"
             UPDATE llm_retrieval_profile
             SET name = ?,
                 strategy = ?,
-                retrievers_json = ?,
+                retrievers_json = SDKWORK_JSON_BIND(?),
                 top_k = ?,
                 context_budget_tokens = ?,
                 status = ?,
-                updated_at = ?,
+                updated_at = SDKWORK_TIMESTAMP_BIND(?),
                 version = version + 1
             WHERE tenant_id = ? AND uuid = ?
             "#,
@@ -404,15 +432,18 @@ impl NativeSqlLlmStore {
         status: &str,
         capability_json: &str,
     ) -> Result<(), NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect(),
             r#"
             INSERT INTO llm_implementation_profile (
-              uuid, tenant_id, name, implementation_kind, role, status,
+              id, uuid, tenant_id, name, implementation_kind, role, status,
               capability_json, created_at, updated_at, version
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+            VALUES (?, ?, ?, ?, ?, ?, ?, SDKWORK_JSON_BIND(?),
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_TIMESTAMP_BIND(?), 1)
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(profile_uuid)
         .bind(tenant_id)
         .bind(name)
@@ -432,10 +463,13 @@ impl NativeSqlLlmStore {
         tenant_id: i64,
         page_size: i32,
     ) -> Result<Vec<NativeSqlImplementationProfileRow>, NativeSqlStoreError> {
-        let rows = sqlx::query(
+        let rows = sqlx::query_for(
+            self.dialect(),
             r#"
-            SELECT uuid, name, implementation_kind, role, status, capability_json,
-                   created_at, updated_at, version
+            SELECT uuid, name, implementation_kind, role, status,
+                   SDKWORK_JSON_TEXT(capability_json) AS capability_json,
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at,
+                   SDKWORK_TIMESTAMP_TEXT(updated_at) AS updated_at, version
             FROM llm_implementation_profile
             WHERE tenant_id = ?
             ORDER BY updated_at DESC
@@ -458,10 +492,13 @@ impl NativeSqlLlmStore {
         tenant_id: i64,
         profile_uuid: &str,
     ) -> Result<Option<NativeSqlImplementationProfileRow>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect(),
             r#"
-            SELECT uuid, name, implementation_kind, role, status, capability_json,
-                   created_at, updated_at, version
+            SELECT uuid, name, implementation_kind, role, status,
+                   SDKWORK_JSON_TEXT(capability_json) AS capability_json,
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at,
+                   SDKWORK_TIMESTAMP_TEXT(updated_at) AS updated_at, version
             FROM llm_implementation_profile
             WHERE tenant_id = ? AND uuid = ?
             "#,
@@ -491,15 +528,16 @@ impl NativeSqlLlmStore {
                 message: "implementation profile not found".to_string(),
             })?;
 
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect(),
             r#"
             UPDATE llm_implementation_profile
             SET name = ?,
                 implementation_kind = ?,
                 role = ?,
                 status = ?,
-                capability_json = ?,
-                updated_at = ?,
+                capability_json = SDKWORK_JSON_BIND(?),
+                updated_at = SDKWORK_TIMESTAMP_BIND(?),
                 version = version + 1
             WHERE tenant_id = ? AND uuid = ?
             "#,
@@ -528,20 +566,24 @@ impl NativeSqlLlmStore {
         display_name: &str,
         health_state: &str,
     ) -> Result<(), NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect(),
             r#"
             INSERT INTO llm_provider_binding (
-              uuid, tenant_id, provider_kind, provider_code, display_name,
+              id, uuid, tenant_id, provider_kind, provider_code, display_name,
               capabilities_json, health_state, created_at, updated_at, version
             )
-            VALUES (?, ?, ?, ?, ?, '{}', ?, ?, ?, 1)
+            VALUES (?, ?, ?, ?, ?, ?, SDKWORK_JSON_BIND(?), ?,
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_TIMESTAMP_BIND(?), 1)
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(binding_uuid)
         .bind(tenant_id)
         .bind(provider_kind)
         .bind(provider_code)
         .bind(display_name)
+        .bind("{}")
         .bind(health_state)
         .bind(now_text())
         .bind(now_text())
@@ -555,10 +597,12 @@ impl NativeSqlLlmStore {
         tenant_id: i64,
         page_size: i32,
     ) -> Result<Vec<NativeSqlProviderBindingRow>, NativeSqlStoreError> {
-        let rows = sqlx::query(
+        let rows = sqlx::query_for(
+            self.dialect(),
             r#"
             SELECT uuid, provider_kind, provider_code, display_name, health_state,
-                   created_at, updated_at, version
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at,
+                   SDKWORK_TIMESTAMP_TEXT(updated_at) AS updated_at, version
             FROM llm_provider_binding
             WHERE tenant_id = ?
             ORDER BY updated_at DESC
@@ -578,10 +622,12 @@ impl NativeSqlLlmStore {
         tenant_id: i64,
         binding_uuid: &str,
     ) -> Result<Option<NativeSqlProviderBindingRow>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect(),
             r#"
             SELECT uuid, provider_kind, provider_code, display_name, health_state,
-                   created_at, updated_at, version
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at,
+                   SDKWORK_TIMESTAMP_TEXT(updated_at) AS updated_at, version
             FROM llm_provider_binding
             WHERE tenant_id = ? AND uuid = ?
             "#,
@@ -609,13 +655,14 @@ impl NativeSqlLlmStore {
                 message: "provider binding not found".to_string(),
             })?;
 
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect(),
             r#"
             UPDATE llm_provider_binding
             SET display_name = ?,
                 provider_code = ?,
                 health_state = ?,
-                updated_at = ?,
+                updated_at = SDKWORK_TIMESTAMP_BIND(?),
                 version = version + 1
             WHERE tenant_id = ? AND uuid = ?
             "#,
@@ -641,14 +688,17 @@ impl NativeSqlLlmStore {
         state: &str,
         metrics_json: Option<&str>,
     ) -> Result<(), NativeSqlStoreError> {
-        sqlx::query(
+        sqlx::query_for(
+            self.dialect(),
             r#"
             INSERT INTO llm_eval_run (
-              uuid, tenant_id, eval_type, state, metrics_json, created_at, updated_at
+              id, uuid, tenant_id, eval_type, state, metrics_json, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, SDKWORK_JSON_BIND(?),
+                    SDKWORK_TIMESTAMP_BIND(?), SDKWORK_TIMESTAMP_BIND(?))
             "#,
         )
+        .bind(self.next_row_id()?)
         .bind(eval_run_uuid)
         .bind(tenant_id)
         .bind(eval_type)
@@ -666,9 +716,13 @@ impl NativeSqlLlmStore {
         tenant_id: i64,
         page_size: i32,
     ) -> Result<Vec<NativeSqlEvalRunRow>, NativeSqlStoreError> {
-        let rows = sqlx::query(
+        let rows = sqlx::query_for(
+            self.dialect(),
             r#"
-            SELECT uuid, eval_type, state, metrics_json, created_at, updated_at
+            SELECT uuid, eval_type, state,
+                   SDKWORK_JSON_TEXT(metrics_json) AS metrics_json,
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at,
+                   SDKWORK_TIMESTAMP_TEXT(updated_at) AS updated_at
             FROM llm_eval_run
             WHERE tenant_id = ?
             ORDER BY created_at DESC
@@ -688,9 +742,13 @@ impl NativeSqlLlmStore {
         tenant_id: i64,
         eval_run_uuid: &str,
     ) -> Result<Option<NativeSqlEvalRunRow>, NativeSqlStoreError> {
-        let row = sqlx::query(
+        let row = sqlx::query_for(
+            self.dialect(),
             r#"
-            SELECT uuid, eval_type, state, metrics_json, created_at, updated_at
+            SELECT uuid, eval_type, state,
+                   SDKWORK_JSON_TEXT(metrics_json) AS metrics_json,
+                   SDKWORK_TIMESTAMP_TEXT(created_at) AS created_at,
+                   SDKWORK_TIMESTAMP_TEXT(updated_at) AS updated_at
             FROM llm_eval_run
             WHERE tenant_id = ? AND uuid = ?
             "#,
@@ -704,7 +762,7 @@ impl NativeSqlLlmStore {
     }
 }
 
-fn map_index_row(row: sqlx::sqlite::SqliteRow) -> NativeSqlMemoryIndexRow {
+fn map_index_row(row: sqlx::any::AnyRow) -> NativeSqlMemoryIndexRow {
     NativeSqlMemoryIndexRow {
         index_uuid: row.get("uuid"),
         space_id: row.get("space_id"),
@@ -719,7 +777,7 @@ fn map_index_row(row: sqlx::sqlite::SqliteRow) -> NativeSqlMemoryIndexRow {
     }
 }
 
-fn map_retrieval_profile_row(row: sqlx::sqlite::SqliteRow) -> NativeSqlRetrievalProfileRow {
+fn map_retrieval_profile_row(row: sqlx::any::AnyRow) -> NativeSqlRetrievalProfileRow {
     NativeSqlRetrievalProfileRow {
         profile_uuid: row.get("uuid"),
         space_id: row.get("space_id"),
@@ -735,9 +793,7 @@ fn map_retrieval_profile_row(row: sqlx::sqlite::SqliteRow) -> NativeSqlRetrieval
     }
 }
 
-fn map_implementation_profile_row(
-    row: sqlx::sqlite::SqliteRow,
-) -> NativeSqlImplementationProfileRow {
+fn map_implementation_profile_row(row: sqlx::any::AnyRow) -> NativeSqlImplementationProfileRow {
     NativeSqlImplementationProfileRow {
         profile_uuid: row.get("uuid"),
         name: row.get("name"),
@@ -751,7 +807,7 @@ fn map_implementation_profile_row(
     }
 }
 
-fn map_provider_binding_row(row: sqlx::sqlite::SqliteRow) -> NativeSqlProviderBindingRow {
+fn map_provider_binding_row(row: sqlx::any::AnyRow) -> NativeSqlProviderBindingRow {
     NativeSqlProviderBindingRow {
         binding_uuid: row.get("uuid"),
         provider_kind: row.get("provider_kind"),
@@ -764,7 +820,7 @@ fn map_provider_binding_row(row: sqlx::sqlite::SqliteRow) -> NativeSqlProviderBi
     }
 }
 
-fn map_eval_run_row(row: sqlx::sqlite::SqliteRow) -> NativeSqlEvalRunRow {
+fn map_eval_run_row(row: sqlx::any::AnyRow) -> NativeSqlEvalRunRow {
     NativeSqlEvalRunRow {
         eval_run_uuid: row.get("uuid"),
         eval_type: row.get("eval_type"),

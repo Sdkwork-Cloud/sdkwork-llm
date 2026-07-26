@@ -19,8 +19,7 @@ pub fn next_numeric_id() -> LlmServiceResult<u64> {
     let id = id_generator()
         .generate()
         .map_err(|error| LlmServiceError::storage(format!("id generation failed: {error}")))?;
-    u64::try_from(id)
-        .map_err(|_| LlmServiceError::storage(format!("id out of u64 range: {id}")))
+    u64::try_from(id).map_err(|_| LlmServiceError::storage(format!("id out of u64 range: {id}")))
 }
 
 pub fn current_timestamp() -> String {

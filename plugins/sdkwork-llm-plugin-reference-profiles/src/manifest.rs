@@ -31,10 +31,7 @@ pub fn build_reference_outbox_store() -> ReferenceProfilePortBuilder {
 }
 
 pub fn build_reference_candidate_store() -> ReferenceProfilePortBuilder {
-    ready_builder(
-        "LlmCandidateStorePort",
-        "build_reference_candidate_store",
-    )
+    ready_builder("LlmCandidateStorePort", "build_reference_candidate_store")
 }
 
 pub fn build_reference_habit_store() -> ReferenceProfilePortBuilder {

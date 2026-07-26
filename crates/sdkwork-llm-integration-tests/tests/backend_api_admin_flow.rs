@@ -115,7 +115,10 @@ async fn backend_api_admin_config_persists_in_sql_tables() {
         .unwrap();
     assert_eq!(indexes.status(), StatusCode::OK);
 
-    let index_rows = store.list_llm_indexes_for_tenant(100_001, 20).await.unwrap();
+    let index_rows = store
+        .list_llm_indexes_for_tenant(100_001, 20)
+        .await
+        .unwrap();
     assert!(!index_rows.is_empty());
     assert_eq!(index_rows[0].index_kind, "keyword");
 

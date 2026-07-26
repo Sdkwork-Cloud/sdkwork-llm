@@ -128,9 +128,7 @@ impl OpenLlmService {
         Self::map_candidate_detail(refreshed)
     }
 
-    fn map_candidate_detail(
-        row: NativeSqlCandidateDetailRow,
-    ) -> LlmServiceResult<LlmCandidate> {
+    fn map_candidate_detail(row: NativeSqlCandidateDetailRow) -> LlmServiceResult<LlmCandidate> {
         Ok(LlmCandidate {
             candidate_id: row.candidate_id.parse().unwrap_or(0),
             space_id: u64::try_from(row.space_id.max(0)).unwrap_or(0),

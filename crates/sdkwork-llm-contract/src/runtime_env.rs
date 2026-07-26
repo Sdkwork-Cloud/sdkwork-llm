@@ -5,7 +5,9 @@ static ENV_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 /// Serializes env-mutating tests across crates that share process environment state.
 #[doc(hidden)]
 pub fn env_test_lock() -> std::sync::MutexGuard<'static, ()> {
-    ENV_TEST_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    ENV_TEST_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 /// Canonical `SDKWORK_LLM_ENVIRONMENT` / `SDKWORK_LLM_CONFIG_PROFILE` value.
