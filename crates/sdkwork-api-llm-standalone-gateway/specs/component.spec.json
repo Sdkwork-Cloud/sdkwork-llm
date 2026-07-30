@@ -56,7 +56,7 @@
     "events": [],
     "configKeys": [
       "SDKWORK_LLM_APPLICATION_PUBLIC_INGRESS_BIND",
-      "SDKWORK_LLM_DATABASE_URL"
+      "SDKWORK_DATABASE_*"
     ],
     "layerRole": "runtime-gateway"
   },

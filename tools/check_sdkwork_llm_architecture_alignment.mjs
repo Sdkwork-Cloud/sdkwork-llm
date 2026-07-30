@@ -115,7 +115,7 @@ assert(
   'open-api web bootstrap must use shared llm web auth mode',
 );
 assert(
-  !openWebBootstrap.includes('SDKWORK_LLM_DATABASE_URL").is_ok()'),
+  !openWebBootstrap.includes('SDKWORK_DATABASE_URL").is_ok()'),
   'open-api web bootstrap must not gate auth on DATABASE_URL presence',
 );
 

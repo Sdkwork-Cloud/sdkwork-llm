@@ -44,16 +44,13 @@ spec:
               value: "0.0.0.0:8080"
             - name: SDKWORK_LLM_SNOWFLAKE_NODE_ID
               value: "1"
-            - name: SDKWORK_LLM_DATABASE_URL
+            - name: SDKWORK_DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: sdkwork-llm-database
                   key: database-url
-            - name: SDKWORK_IAM_DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: sdkwork-llm-iam-database
-                  key: database-url
+            - name: SDKWORK_DATABASE_SCHEMA
+              value: sdkwork_ai_prod
           readinessProbe:
             httpGet:
               path: /healthz

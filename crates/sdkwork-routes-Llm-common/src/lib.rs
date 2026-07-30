@@ -18,11 +18,11 @@ pub async fn llm_web_auth_mode_from_env() -> LlmWebAuthMode {
         return LlmWebAuthMode::DevInline;
     }
 
-    let iam_database_explicitly_configured = std::env::var("SDKWORK_IAM_DATABASE_URL")
-        .or_else(|_| std::env::var("SDKWORK_IAM_DATABASE_ENGINE"))
+    let workspace_database_explicitly_configured = std::env::var("SDKWORK_DATABASE_URL")
+        .or_else(|_| std::env::var("SDKWORK_DATABASE_ENGINE"))
         .is_ok();
 
-    if llm_is_production_like_environment() && !iam_database_explicitly_configured {
+    if llm_is_production_like_environment() && !workspace_database_explicitly_configured {
         return LlmWebAuthMode::ProductionFailClosed;
     }
 
@@ -85,7 +85,8 @@ mod tests {
         let previous_bypass = std::env::var("SDKWORK_LLM_DEV_AUTH_BYPASS").ok();
         std::env::set_var("SDKWORK_LLM_ENVIRONMENT", "production");
         std::env::remove_var("SDKWORK_LLM_DEV_AUTH_BYPASS");
-        std::env::remove_var("SDKWORK_IAM_DATABASE_URL");
+        let previous_database_url = std::env::var("SDKWORK_DATABASE_URL").ok();
+        std::env::remove_var("SDKWORK_DATABASE_URL");
 
         let mode = llm_web_auth_mode_from_env().await;
         assert!(matches!(mode, LlmWebAuthMode::ProductionFailClosed));
@@ -99,6 +100,11 @@ mod tests {
             std::env::set_var("SDKWORK_LLM_DEV_AUTH_BYPASS", value);
         } else {
             std::env::remove_var("SDKWORK_LLM_DEV_AUTH_BYPASS");
+        }
+        if let Some(value) = previous_database_url {
+            std::env::set_var("SDKWORK_DATABASE_URL", value);
+        } else {
+            std::env::remove_var("SDKWORK_DATABASE_URL");
         }
     }
 }

@@ -24,7 +24,7 @@
     "sdkClients": [],
     "sdkDependencies": [{ "workspace": "sdkwork-database" }],
     "events": [],
-    "configKeys": ["SDKWORK_LLM_DATABASE_URL"]
+    "configKeys": ["SDKWORK_DATABASE_*"]
   },
   "verification": {
     "commands": ["cargo test -p sdkwork-llm-database-host"]
