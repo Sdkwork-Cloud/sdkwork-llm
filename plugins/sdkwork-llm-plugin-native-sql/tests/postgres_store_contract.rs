@@ -9,7 +9,7 @@ use sdkwork_llm_spi::{
 };
 
 async fn postgres_store() -> Option<NativeSqlLlmStore> {
-    let url = match std::env::var("SDKWORK_LLM_POSTGRES_TEST_URL") {
+    let url = match std::env::var("SDKWORK_DATABASE_TEST_POSTGRES_URL") {
         Ok(url) if !url.trim().is_empty() => url,
         _ => return None,
     };
