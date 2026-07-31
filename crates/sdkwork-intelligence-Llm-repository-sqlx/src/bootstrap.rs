@@ -29,17 +29,7 @@ pub async fn bootstrap_llm_data_plane_from_env() -> Result<LlmDataPlane, String>
         .await
         .map_err(|error| error.to_string())?;
 
-    if pool.as_postgres().is_some() {
-        bootstrap_llm_database(pool.clone()).await?;
-    }
-
-    let store = if pool.as_sqlite().is_some() {
-        let config = DatabaseConfig::from_env("LLM").map_err(|error| error.to_string())?;
-        NativeSqlLlmStore::connect(&config)
-            .await
-            .map_err(|error| error.to_string())?
-    } else {
-        open_native_sql_store_from_pool(&pool).await?
-    };
+    bootstrap_llm_database(pool.clone()).await?;
+    let store = open_native_sql_store_from_pool(&pool).await?;
     Ok(LlmDataPlane { pool, store })
 }

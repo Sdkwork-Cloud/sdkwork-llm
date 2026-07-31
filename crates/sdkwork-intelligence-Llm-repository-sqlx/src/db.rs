@@ -13,8 +13,8 @@ pub async fn connect_llm_pool_from_env() -> Result<LlmDatabasePool, PoolError> {
 pub async fn open_native_sql_store_from_pool(
     pool: &LlmDatabasePool,
 ) -> Result<sdkwork_llm_plugin_native_sql::NativeSqlLlmStore, String> {
-    if pool.as_sqlite().is_none() && pool.as_postgres().is_none() {
-        return Err("llm native SQL store requires sqlite or postgres".to_string());
+    if pool.as_postgres().is_none() {
+        return Err("LLM server repository requires PostgreSQL".to_string());
     }
     NativeSqlLlmStore::from_database_pool(pool)
         .await

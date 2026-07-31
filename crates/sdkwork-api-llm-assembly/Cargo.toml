@@ -13,6 +13,7 @@ path = "src/lib.rs"
 axum.workspace = true
 tokio.workspace = true
 sdkwork-web-bootstrap.workspace = true
+sdkwork-web-core.workspace = true
 sdkwork-intelligence-llm-repository-sqlx.workspace = true
 sdkwork-intelligence-llm-service.workspace = true
 sdkwork-routes-llm-app-api.workspace = true

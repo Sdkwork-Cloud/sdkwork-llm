@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-llm-plugin-native-sql",
+    "displayName": "SDKWork LLM Native SQL Plugin",
+    "version": "0.1.0",
+    "type": "rust-crate",
+    "root": "plugins/sdkwork-llm-plugin-native-sql",
+    "domain": "intelligence",
+    "capability": "llm",
+    "surface": "persistence-plugin",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml", "sdkwork.llm.plugin.json"]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "CODE_STYLE_SPEC.md",
+      "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md"
+    },
+    {
+      "file": "NAMING_SPEC.md",
+      "path": "../../../sdkwork-specs/NAMING_SPEC.md"
+    },
+    {
+      "file": "RUST_CODE_SPEC.md",
+      "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md"
+    },
+    {
+      "file": "MODULE_SPEC.md",
+      "path": "../../../sdkwork-specs/MODULE_SPEC.md"
+    },
+    {
+      "file": "DATABASE_SPEC.md",
+      "path": "../../../sdkwork-specs/DATABASE_SPEC.md"
+    },
+    {
+      "file": "DATABASE_FRAMEWORK_SPEC.md",
+      "path": "../../../sdkwork-specs/DATABASE_FRAMEWORK_SPEC.md"
+    },
+    {
+      "file": "CONFIG_SPEC.md",
+      "path": "../../../sdkwork-specs/CONFIG_SPEC.md"
+    },
+    {
+      "file": "DEPLOYMENT_SPEC.md",
+      "path": "../../../sdkwork-specs/DEPLOYMENT_SPEC.md"
+    },
+    {
+      "file": "TEST_SPEC.md",
+      "path": "../../../sdkwork-specs/TEST_SPEC.md"
+    }
+  ],
+  "contracts": {
+    "layerRole": "backend-repository",
+    "publicExports": ["."],
+    "providedPorts": [
+      { "name": "LlmRecordStorePort", "export": "." },
+      { "name": "LlmEventStorePort", "export": "." },
+      { "name": "LlmAuditStorePort", "export": "." },
+      { "name": "LlmOutboxStorePort", "export": "." },
+      { "name": "LlmCandidateStorePort", "export": "." },
+      { "name": "LlmHabitStorePort", "export": "." },
+      { "name": "LlmRetrievalTraceStorePort", "export": "." }
+    ],
+    "requiredPorts": [
+      {
+        "name": "LlmStorePortContracts",
+        "export": ".",
+        "provider": "sdkwork-llm-spi"
+      },
+      {
+        "name": "DatabasePoolFactory",
+        "export": ".",
+        "provider": "sdkwork-database-sqlx"
+      }
+    ],
+    "runtimeEntrypoints": [
+      "sdkwork_llm_plugin_native_sql::connect_any_pool",
+      "sdkwork_llm_plugin_native_sql::build_native_sql_record_store",
+      "sdkwork_llm_plugin_native_sql::build_native_sql_event_store",
+      "sdkwork_llm_plugin_native_sql::build_native_sql_audit_store",
+      "sdkwork_llm_plugin_native_sql::build_native_sql_outbox_store",
+      "sdkwork_llm_plugin_native_sql::build_native_sql_candidate_store",
+      "sdkwork_llm_plugin_native_sql::build_native_sql_habit_store",
+      "sdkwork_llm_plugin_native_sql::build_native_sql_retrieval_trace_store"
+    ],
+    "routeManifest": null,
+    "sdkClients": [],
+    "sdkDependencies": [],
+    "permissionComposition": {},
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": ["SDKWORK_DATABASE_*", "SDKWORK_LLM_SNOWFLAKE_NODE_ID"]
+  },
+  "verification": {
+    "commands": [
+      "cargo test -p sdkwork-llm-plugin-native-sql",
+      "cargo test -p sdkwork-llm-plugin-native-sql --no-default-features --features client-local-sqlite"
+    ]
+  }
+}

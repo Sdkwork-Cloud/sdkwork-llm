@@ -1625,6 +1625,7 @@ dependencies = [
  "sdkwork-routes-llm-app-api",
  "sdkwork-routes-llm-backend-api",
  "sdkwork-routes-llm-open-api",
+ "sdkwork-web-bootstrap",
  "tokio",
 ]
 
@@ -1649,6 +1650,7 @@ dependencies = [
  "thiserror",
  "toml",
  "tracing",
+ "url",
 ]
 
 [[package]]
@@ -1831,7 +1833,6 @@ dependencies = [
  "sdkwork-utils-rust",
  "serde",
  "serde_json",
- "sqlx",
  "thiserror",
  "tokio",
  "tracing",
@@ -2068,6 +2069,7 @@ dependencies = [
  "async-trait",
  "axum",
  "http",
+ "sdkwork-database-sqlx",
  "sdkwork-web-axum",
  "sdkwork-web-contract",
  "sdkwork-web-core",

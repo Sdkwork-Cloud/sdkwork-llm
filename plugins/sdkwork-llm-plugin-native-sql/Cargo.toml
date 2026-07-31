@@ -4,16 +4,39 @@ edition.workspace = true
 version.workspace = true
 license.workspace = true
 
+[features]
+default = ["postgres"]
+postgres = [
+    "sqlx/postgres",
+    "sdkwork-database-id/postgres",
+    "sdkwork-database-sqlx/postgres",
+]
+client-local-sqlite = [
+    "sqlx/sqlite",
+    "sdkwork-database-id/sqlite",
+    "sdkwork-database-sqlx/sqlite",
+]
+
 [dependencies]
 async-trait.workspace = true
 sdkwork-llm-spi = { path = "../../crates/sdkwork-llm-spi" }
 sdkwork-database-config.workspace = true
 sdkwork-database-id.workspace = true
-sdkwork-database-sqlx.workspace = true
+sdkwork-database-sqlx = { workspace = true, features = ["any"] }
 serde_json.workspace = true
 sdkwork-utils-rust.workspace = true
-sqlx.workspace = true
+sqlx = { workspace = true, features = ["any"] }
 thiserror.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true
+
+[[test]]
+name = "sqlite_store_contract"
+path = "tests/sqlite_store_contract.rs"
+required-features = ["client-local-sqlite"]
+
+[[test]]
+name = "postgres_store_contract"
+path = "tests/postgres_store_contract.rs"
+required-features = ["postgres"]

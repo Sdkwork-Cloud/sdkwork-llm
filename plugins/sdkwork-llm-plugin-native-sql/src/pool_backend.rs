@@ -38,6 +38,7 @@ pub fn normalize_llm_database_config(mut config: DatabaseConfig) -> DatabaseConf
 pub async fn connect_any_pool(
     config: &DatabaseConfig,
 ) -> Result<(AnyPool, LlmSqlDialect), NativeSqlStoreError> {
+    ensure_database_engine_enabled(config.engine)?;
     sqlx::any::install_default_drivers();
     let config = normalize_llm_database_config(config.clone());
     let dialect = LlmSqlDialect::from_config(&config);
@@ -48,4 +49,39 @@ pub async fn connect_any_pool(
             .await?;
     }
     Ok((pool, dialect))
+}
+
+fn ensure_database_engine_enabled(engine: DatabaseEngine) -> Result<(), NativeSqlStoreError> {
+    match engine {
+        DatabaseEngine::Postgres if !cfg!(feature = "postgres") => {
+            Err(NativeSqlStoreError::DatabaseEngineDisabled {
+                engine: "postgres",
+                required_feature: "postgres",
+            })
+        }
+        DatabaseEngine::Sqlite if !cfg!(feature = "client-local-sqlite") => {
+            Err(NativeSqlStoreError::DatabaseEngineDisabled {
+                engine: "sqlite",
+                required_feature: "client-local-sqlite",
+            })
+        }
+        _ => Ok(()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn compiled_database_engines_match_declared_features() {
+        assert_eq!(
+            ensure_database_engine_enabled(DatabaseEngine::Postgres).is_ok(),
+            cfg!(feature = "postgres")
+        );
+        assert_eq!(
+            ensure_database_engine_enabled(DatabaseEngine::Sqlite).is_ok(),
+            cfg!(feature = "client-local-sqlite")
+        );
+    }
 }

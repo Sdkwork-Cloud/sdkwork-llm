@@ -18,4 +18,4 @@ sdkwork-web-core.workspace = true
 tokio.workspace = true
 tower.workspace = true
 sdkwork-intelligence-llm-service.workspace = true
-sdkwork-llm-plugin-native-sql.workspace = true
+sdkwork-llm-plugin-native-sql = { workspace = true, features = ["client-local-sqlite"] }

@@ -1,6 +1,8 @@
 use crate::sqlx_compat as sqlx;
 use async_trait::async_trait;
-use sdkwork_database_config::{DatabaseConfig, DatabaseEngine};
+use sdkwork_database_config::DatabaseConfig;
+#[cfg(feature = "client-local-sqlite")]
+use sdkwork_database_config::DatabaseEngine;
 use sdkwork_database_id::SnowflakeIdGenerator;
 use sdkwork_llm_spi::{
     AppendLlmAuditCommand, AppendLlmEventCommand, AppendLlmOutboxCommand,
@@ -52,6 +54,7 @@ impl NativeSqlLlmStore {
         Ok(store)
     }
 
+    #[cfg(feature = "client-local-sqlite")]
     pub async fn new_in_memory_sqlite() -> Result<Self, NativeSqlStoreError> {
         let config = DatabaseConfig {
             engine: DatabaseEngine::Sqlite,
@@ -75,6 +78,7 @@ impl NativeSqlLlmStore {
         Self::open_pool(pool.config(), false).await
     }
 
+    #[cfg(feature = "client-local-sqlite")]
     pub async fn install_sqlite_phase1_schema(pool: &AnyPool) -> Result<(), NativeSqlStoreError> {
         let store = Self::from_any_pool(pool.clone(), LlmSqlDialect::Sqlite).await;
         store.apply_sqlite_phase1_migration().await
@@ -3320,6 +3324,13 @@ pub enum NativeSqlStoreError {
     Json(#[from] serde_json::Error),
     #[error("native SQL store ID generation error: {0}")]
     IdGeneration(String),
+    #[error(
+        "native SQL store database engine `{engine}` is disabled; enable Cargo feature `{required_feature}`"
+    )]
+    DatabaseEngineDisabled {
+        engine: &'static str,
+        required_feature: &'static str,
+    },
     #[error("native SQL event append conflict for tenant {tenant_id} event {event_id}")]
     EventConflict { tenant_id: i64, event_id: String },
     #[error("native SQL outbox append conflict for tenant {tenant_id} outbox event {outbox_id}")]

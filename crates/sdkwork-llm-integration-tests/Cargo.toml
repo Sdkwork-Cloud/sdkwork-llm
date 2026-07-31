@@ -13,7 +13,7 @@ tower.workspace = true
 sdkwork-iam-web-adapter.workspace = true
 sdkwork-intelligence-llm-service.workspace = true
 sdkwork-llm-contract.workspace = true
-sdkwork-llm-plugin-native-sql.workspace = true
+sdkwork-llm-plugin-native-sql = { workspace = true, features = ["client-local-sqlite"] }
 sdkwork-llm-spi.workspace = true
 sdkwork-routes-llm-app-api.workspace = true
 sdkwork-routes-llm-open-api.workspace = true
