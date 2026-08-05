@@ -12,7 +12,7 @@ static NORMALIZED_SQL: OnceLock<RwLock<HashMap<String, &'static str>>> = OnceLoc
 
 pub(crate) fn query<'q, DB>(
     sql: &str,
-) -> ::sqlx::query::Query<'q, DB, <DB as ::sqlx::Database>::Arguments<'q>>
+) -> ::sqlx::query::Query<'q, DB, <DB as ::sqlx::Database>::Arguments>
 where
     DB: ::sqlx::Database,
 {
@@ -22,7 +22,7 @@ where
 pub(crate) fn query_for<'q, DB>(
     dialect: LlmSqlDialect,
     sql: &str,
-) -> ::sqlx::query::Query<'q, DB, <DB as ::sqlx::Database>::Arguments<'q>>
+) -> ::sqlx::query::Query<'q, DB, <DB as ::sqlx::Database>::Arguments>
 where
     DB: ::sqlx::Database,
 {
@@ -31,7 +31,7 @@ where
 
 pub(crate) fn query_scalar<'q, DB, O>(
     sql: &str,
-) -> ::sqlx::query::QueryScalar<'q, DB, O, <DB as ::sqlx::Database>::Arguments<'q>>
+) -> ::sqlx::query::QueryScalar<'q, DB, O, <DB as ::sqlx::Database>::Arguments>
 where
     DB: ::sqlx::Database,
     (O,): for<'row> ::sqlx::FromRow<'row, DB::Row>,
